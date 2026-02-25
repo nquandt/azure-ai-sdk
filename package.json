@@ -1,6 +1,6 @@
 {
   "name": "@nquandt/azure-ai-sdk",
-  "version": "0.1.0",
+  "version": "0.0.0-dev",
   "description": "Vercel AI SDK custom provider for Azure AI Foundry using Azure Entra identity authentication",
   "license": "MIT",
   "author": "nquandt",
