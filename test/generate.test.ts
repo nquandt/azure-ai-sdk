@@ -59,14 +59,14 @@ describe('doGenerate — request shape', () => {
     expect(requests[0].body).toHaveProperty('temperature', 0.7);
   });
 
-  it('sends maxOutputTokens as max_tokens', async () => {
+  it('sends maxOutputTokens as max_completion_tokens', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       maxOutputTokens: 512,
     });
 
-    expect(requests[0].body).toHaveProperty('max_tokens', 512);
+    expect(requests[0].body).toHaveProperty('max_completion_tokens', 512);
   });
 
   it('sends stop sequences', async () => {
