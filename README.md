@@ -57,12 +57,16 @@ console.log(text);
 
 ## Endpoint formats
 
-Two endpoint styles are supported and detected automatically:
+Two endpoint styles are supported and detected automatically from the hostname:
 
 | Endpoint format | URL called | Model location |
 |---|---|---|
 | `https://<resource>.cognitiveservices.azure.com` | `/openai/deployments/{model}/chat/completions?api-version=...` | URL path |
 | `https://<project>.services.ai.azure.com/models` | `/chat/completions` | Request body |
+
+When routing through a gateway (e.g. APIM) whose hostname does not match
+either pattern, use the `endpointStyle` option to override detection. See
+[Using with APIM](#using-with-azure-api-management-apim) below.
 
 ---
 
@@ -112,7 +116,12 @@ createAzureFoundry({
   // Can also be set via the AZURE_AI_FOUNDRY_ENDPOINT environment variable.
   endpoint: 'https://my-resource.cognitiveservices.azure.com',
 
-  // Optional. API version query param (cognitiveservices endpoints only).
+  // Optional. Controls URL construction. Values: 'auto' | 'cognitive-services' | 'foundry'.
+  // Defaults to 'auto' — infers style from the hostname.
+  // Set explicitly when routing through a gateway whose hostname is not recognized.
+  endpointStyle: 'auto',
+
+  // Optional. API version query param (cognitive-services style only).
   // Defaults to '2024-10-21'.
   apiVersion: '2024-10-21',
 
@@ -120,9 +129,15 @@ createAzureFoundry({
   credential: new ManagedIdentityCredential(),
 
   // Optional. OAuth2 scope. Defaults to 'https://cognitiveservices.azure.com/.default'.
+  // For APIM: set to 'api://<apim-app-client-id>/.default'.
   scope: 'https://cognitiveservices.azure.com/.default',
 
-  // Optional. Extra headers sent with every request.
+  // Optional. Supplemental subscription key sent alongside the Entra bearer token.
+  // Only needed when your APIM policy additionally requires a subscription key.
+  // Entra auth is the primary mechanism — this is not a substitute for it.
+  apiKey: process.env.APIM_SUBSCRIPTION_KEY,
+
+  // Optional. Extra headers sent with every request. Take precedence over apiKey.
   headers: { 'x-custom-header': 'value' },
 });
 ```
@@ -230,6 +245,94 @@ AZURE_AI_FOUNDRY_ENDPOINT=https://my-resource.cognitiveservices.azure.com
 ```ts
 // endpoint is read from AZURE_AI_FOUNDRY_ENDPOINT automatically
 const foundry = createAzureFoundry({});
+```
+
+---
+
+## Using with Azure API Management (APIM)
+
+When Azure AI models are exposed through an APIM gateway rather than accessed
+directly, three things need to be configured differently from a standard
+Foundry/Cognitive Services connection.
+
+### 1. Endpoint style
+
+APIM hostnames (e.g. `my-org.azure-api.net`) are not automatically recognized
+as Cognitive Services endpoints. If your APIM routes to an Azure OpenAI backend,
+set `endpointStyle: 'cognitive-services'` explicitly so requests are sent to
+`/openai/deployments/{model}/chat/completions?api-version=...`:
+
+```ts
+const foundry = createAzureFoundry({
+  endpoint: 'https://my-org.azure-api.net',
+  endpointStyle: 'cognitive-services',
+});
+```
+
+### 2. OAuth scope
+
+APIM validates tokens against its **own Entra app registration**, not the
+Cognitive Services resource. A token obtained for the default scope
+(`https://cognitiveservices.azure.com/.default`) will be rejected by APIM's
+JWT validation policy. Set `scope` to your APIM app registration's audience:
+
+```ts
+const foundry = createAzureFoundry({
+  endpoint: 'https://my-org.azure-api.net',
+  endpointStyle: 'cognitive-services',
+  scope: 'api://<apim-app-client-id>/.default',
+});
+```
+
+Your APIM instance must have a `validate-jwt` policy configured to accept tokens
+from this audience and a backend policy to forward requests to the underlying
+Azure OpenAI / Foundry resource.
+
+### 3. Subscription key (if required by your APIM policy)
+
+Entra bearer token authentication is the primary mechanism — `apiKey` is only
+needed when your APIM product policy additionally requires a subscription key
+alongside the token. Most well-configured APIM deployments validate the Entra
+JWT alone and do not require a subscription key at all.
+
+If your specific APIM policy does require one:
+
+```ts
+const foundry = createAzureFoundry({
+  endpoint: 'https://my-org.azure-api.net',
+  endpointStyle: 'cognitive-services',
+  scope: 'api://<apim-app-client-id>/.default',
+  apiKey: process.env.APIM_SUBSCRIPTION_KEY,  // supplement to Entra auth, not a replacement
+});
+```
+
+The `apiKey` value is sent as both `Ocp-Apim-Subscription-Key` (APIM) and
+`api-key` (Azure OpenAI / Cognitive Services compatibility) headers alongside
+the Entra bearer token. Values in `headers` take precedence if the same key
+appears in both.
+
+### OpenCode config example
+
+```json
+{
+  "provider": {
+    "azure-foundry": {
+      "npm": "@nquandt/azure-ai-sdk",
+      "name": "Azure AI Foundry (APIM)",
+      "options": {
+        "endpoint": "https://my-org.azure-api.net",
+        "endpointStyle": "cognitive-services",
+        "scope": "api://<apim-app-client-id>/.default"
+      },
+      "models": {
+        "gpt-4o": {
+          "name": "GPT-4o",
+          "limit": { "context": 128000, "output": 16384 }
+        }
+      }
+    }
+  }
+}
 ```
 
 ---

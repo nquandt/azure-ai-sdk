@@ -49,17 +49,24 @@ export const openAIResponseSchema = z.object({
     z.object({
       index: z.number(),
       message: z.object({
-        role: z.literal('assistant'),
+        // Some non-OpenAI models (e.g. Kimi-K2.5, DeepSeek) send `"role": null`
+        // rather than the spec-compliant `"assistant"` string. Accept null/undefined
+        // defensively — the role is semantically redundant in a response message.
+        role: z.literal('assistant').nullish(),
         content: z.string().nullish(),
         tool_calls: z.array(toolCallSchema).nullish(),
       }),
       finish_reason: z.string().nullish(),
+      // DeepSeek extension field — pass through without failing validation
+      matched_stop: z.union([z.string(), z.number()]).nullish(),
+      logprobs: z.unknown().nullish(),
+      content_filter_results: z.unknown().nullish(),
     }),
   ),
   usage: z
     .object({
-      prompt_tokens: z.number(),
-      completion_tokens: z.number(),
+      prompt_tokens: z.number().nullish(),
+      completion_tokens: z.number().nullish(),
       total_tokens: z.number().nullish(),
     })
     .nullish(),
@@ -72,8 +79,14 @@ export const openAIChunkSchema = z.object({
     z.object({
       index: z.number(),
       delta: z.object({
-        role: z.enum(['assistant']).optional(),
+        // OpenAI spec: role only sent on first chunk and omitted after.
+        // Non-OpenAI models (Kimi-K2.5, DeepSeek) send `"role": null` explicitly
+        // on subsequent chunks. Both are semantically equivalent — use .nullish()
+        // to accept absent, undefined, and null.
+        role: z.enum(['assistant']).nullish(),
         content: z.string().nullish(),
+        // DeepSeek-R1 / Kimi-K2.5 reasoning chain field — capture rather than discard
+        reasoning_content: z.string().nullish(),
         tool_calls: z
           .array(
             z.object({
@@ -89,6 +102,10 @@ export const openAIChunkSchema = z.object({
           .nullish(),
       }),
       finish_reason: z.string().nullish(),
+      // DeepSeek extension field
+      matched_stop: z.union([z.string(), z.number()]).nullish(),
+      logprobs: z.unknown().nullish(),
+      content_filter_results: z.unknown().nullish(),
     }),
   ),
   usage: z

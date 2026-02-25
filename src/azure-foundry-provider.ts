@@ -41,8 +41,35 @@ export interface AzureFoundryProviderSettings {
   endpoint?: string;
 
   /**
+   * Controls how the chat completions URL is constructed.
+   *
+   * - `'auto'` (default) — infer from the hostname:
+   *     `cognitiveservices.azure.com` → `'cognitive-services'`
+   *     all others                   → `'foundry'`
+   * - `'cognitive-services'` — Azure OpenAI deployment-path style:
+   *     `{endpoint}/openai/deployments/{model}/chat/completions?api-version=...`
+   *     Model is placed in the URL path; `api-version` query param is appended.
+   * - `'foundry'` — AI Foundry inference style:
+   *     `{endpoint}/chat/completions`  (model sent in request body)
+   *
+   * Set this explicitly when routing through a gateway (e.g. APIM) whose
+   * hostname does not contain `cognitiveservices.azure.com` but whose backend
+   * expects the deployment-path URL format.
+   *
+   * @example
+   * ```ts
+   * // APIM gateway fronting an Azure OpenAI backend
+   * createAzureFoundry({
+   *   endpoint: 'https://my-org.azure-api.net',
+   *   endpointStyle: 'cognitive-services',
+   * });
+   * ```
+   */
+  endpointStyle?: 'auto' | 'cognitive-services' | 'foundry';
+
+  /**
    * API version query parameter appended to every request.
-   * Only relevant for cognitiveservices.azure.com endpoints.
+   * Only relevant for the `'cognitive-services'` endpoint style.
    * Defaults to '2024-10-21'.
    */
   apiVersion?: string;
@@ -60,13 +87,50 @@ export interface AzureFoundryProviderSettings {
   credential?: TokenCredential;
 
   /**
-   * OAuth2 scope to request.
-   * Defaults to 'https://cognitiveservices.azure.com/.default'.
+   * OAuth2 scope to request when obtaining a bearer token.
+   *
+   * Defaults to `'https://cognitiveservices.azure.com/.default'`, which is
+   * correct for direct Cognitive Services and AI Foundry endpoints.
+   *
+   * When routing through Azure API Management (APIM), set this to the scope
+   * of the APIM's Entra app registration:
+   *   `'api://<apim-app-client-id>/.default'`
+   *
+   * The APIM instance must be configured to validate JWT tokens from this
+   * audience and forward requests to the backend on behalf of the caller.
    */
   scope?: string;
 
   /**
+   * Optional supplemental API key sent alongside the Entra bearer token.
+   *
+   * **Entra identity is the primary and preferred authentication mechanism
+   * for this provider.** This option exists solely for APIM deployments that
+   * require a subscription key *in addition to* a valid Entra token — it is
+   * not a substitute for Entra auth and the bearer token is always sent.
+   *
+   * When set, the value is forwarded as:
+   *   - `Ocp-Apim-Subscription-Key` (APIM subscription key header)
+   *   - `api-key` (Azure OpenAI / Cognitive Services compatibility header)
+   *
+   * Values in `headers` take precedence if the same key appears in both.
+   *
+   * @example
+   * ```ts
+   * // APIM policy requires both an Entra token AND a subscription key
+   * createAzureFoundry({
+   *   endpoint: 'https://my-org.azure-api.net',
+   *   endpointStyle: 'cognitive-services',
+   *   scope: 'api://<apim-app-client-id>/.default',
+   *   apiKey: process.env.APIM_SUBSCRIPTION_KEY,
+   * });
+   * ```
+   */
+  apiKey?: string;
+
+  /**
    * Custom headers to include in every request.
+   * These take precedence over any headers set by `apiKey`.
    */
   headers?: Record<string, string>;
 
@@ -176,19 +240,37 @@ export function createAzureFoundry(
     const token = await getToken();
     return {
       Authorization: `Bearer ${token}`,
+      ...(options.apiKey
+        ? {
+            'Ocp-Apim-Subscription-Key': options.apiKey,
+            'api-key': options.apiKey,
+          }
+        : {}),
+      // Explicit headers always win — they are merged last
       ...options.headers,
     };
   };
 
-  // Detect endpoint style and build the appropriate chat completions URL.
+  // Resolve the endpoint style.
   //
-  // cognitiveservices.azure.com  →  Azure OpenAI deployment-path style:
-  //   {endpoint}/openai/deployments/{modelId}/chat/completions?api-version=...
+  // 'auto' (default) — infer from hostname:
+  //   cognitiveservices.azure.com  →  'cognitive-services'
+  //   anything else                →  'foundry'
   //
-  // services.ai.azure.com/models →  AI Foundry inference style:
-  //   {endpoint}/chat/completions   (model sent in request body)
+  // Callers may override with an explicit 'endpointStyle' to handle gateways
+  // (e.g. APIM) whose hostname does not match the backend's hostname pattern.
   //
-  const isCognitiveServices = endpoint.includes('cognitiveservices.azure.com');
+  const resolvedStyle = ((): 'cognitive-services' | 'foundry' => {
+    const style = options.endpointStyle ?? 'auto';
+    if (style === 'cognitive-services') return 'cognitive-services';
+    if (style === 'foundry') return 'foundry';
+    // 'auto' — sniff hostname
+    return endpoint.includes('cognitiveservices.azure.com')
+      ? 'cognitive-services'
+      : 'foundry';
+  })();
+
+  const isCognitiveServices = resolvedStyle === 'cognitive-services';
   const apiVersion = options.apiVersion ?? '2024-10-21';
 
   const buildUrl = (modelId: string): string => {

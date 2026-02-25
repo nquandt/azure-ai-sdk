@@ -216,3 +216,69 @@ describe('doStream — error handling', () => {
     await expect(collectStream(makeModel(fetch))).rejects.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Non-OpenAI model compatibility (Kimi-K2.5, DeepSeek, etc.)
+// ---------------------------------------------------------------------------
+
+describe('doStream — non-OpenAI model compatibility', () => {
+  it('accepts explicit null role on intermediate streaming chunks (Kimi-K2.5 / DeepSeek behaviour)', async () => {
+    const chunkWithNullRole = {
+      id: 'chatcmpl-test',
+      model: 'Kimi-K2.5',
+      choices: [{
+        index: 0,
+        delta: { role: null, content: 'Hello', tool_calls: null },
+        finish_reason: null,
+      }],
+    };
+    const { fetch } = fakeStreamFetch([chunkWithNullRole, finishChunk()]);
+    // Should not throw a validation error
+    const parts = await collectStream(makeModel(fetch, 'Kimi-K2.5'));
+    const deltas = parts.filter(p => p.type === 'text-delta').map(p => (p as any).delta);
+    expect(deltas).toContain('Hello');
+  });
+
+  it('accepts DeepSeek-style matched_stop extension field without error', async () => {
+    const chunkWithMatchedStop = {
+      id: 'chatcmpl-test',
+      model: 'DeepSeek-V3.2',
+      choices: [{
+        index: 0,
+        delta: { content: 'Hi' },
+        finish_reason: null,
+        matched_stop: 151643,
+      }],
+    };
+    const { fetch } = fakeStreamFetch([chunkWithMatchedStop, finishChunk()]);
+    const parts = await collectStream(makeModel(fetch, 'DeepSeek-V3.2'));
+    const deltas = parts.filter(p => p.type === 'text-delta').map(p => (p as any).delta);
+    expect(deltas).toContain('Hi');
+  });
+
+  it('accepts reasoning_content field on streaming chunks without error', async () => {
+    const reasoningChunk = {
+      id: 'chatcmpl-test',
+      model: 'DeepSeek-R1',
+      choices: [{
+        index: 0,
+        delta: { role: null, content: null, reasoning_content: ' is', tool_calls: null },
+        finish_reason: null,
+      }],
+    };
+    const contentChunk = {
+      id: 'chatcmpl-test',
+      model: 'DeepSeek-R1',
+      choices: [{
+        index: 0,
+        delta: { content: 'The answer is 42.' },
+        finish_reason: null,
+      }],
+    };
+    const { fetch } = fakeStreamFetch([reasoningChunk, contentChunk, finishChunk()]);
+    // Should not throw a validation error even with reasoning_content
+    const parts = await collectStream(makeModel(fetch, 'DeepSeek-R1'));
+    const deltas = parts.filter(p => p.type === 'text-delta').map(p => (p as any).delta);
+    expect(deltas).toContain('The answer is 42.');
+  });
+});

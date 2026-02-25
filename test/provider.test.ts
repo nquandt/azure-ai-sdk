@@ -171,4 +171,134 @@ describe('createAzureFoundry — authentication', () => {
     expect(requests[0].headers['authorization']).toMatch(/^Bearer /);
     expect(requests[0].headers['x-custom-header']).toBe('custom-value');
   });
+
+  it('apiKey sends Ocp-Apim-Subscription-Key and api-key headers', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.cognitiveservices.azure.com',
+      credential: fakeCredential(),
+      apiKey: 'my-apim-key',
+      fetch,
+    });
+    await foundry('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].headers['ocp-apim-subscription-key']).toBe('my-apim-key');
+    expect(requests[0].headers['api-key']).toBe('my-apim-key');
+  });
+
+  it('explicit headers take precedence over apiKey', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.cognitiveservices.azure.com',
+      credential: fakeCredential(),
+      apiKey: 'default-key',
+      headers: { 'api-key': 'override-key' },
+      fetch,
+    });
+    await foundry('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].headers['api-key']).toBe('override-key');
+  });
+
+  it('no apiKey header is sent when apiKey is not set', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.cognitiveservices.azure.com',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].headers['ocp-apim-subscription-key']).toBeUndefined();
+    expect(requests[0].headers['api-key']).toBeUndefined();
+  });
+});
+
+describe('createAzureFoundry — endpointStyle option', () => {
+  it("endpointStyle 'cognitive-services' forces deployment-path URL for non-cognitiveservices hostname", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-org.azure-api.net',
+      endpointStyle: 'cognitive-services',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
+    expect(requests[0].url).toContain('api-version=');
+    expect(requests[0].body).not.toHaveProperty('model');
+  });
+
+  it("endpointStyle 'foundry' forces body-model URL for cognitiveservices hostname", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.cognitiveservices.azure.com',
+      endpointStyle: 'foundry',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('DeepSeek-R1').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toContain('/chat/completions');
+    expect(requests[0].url).not.toContain('/deployments/');
+    expect(requests[0].body).toHaveProperty('model', 'DeepSeek-R1');
+  });
+
+  it("endpointStyle 'auto' still infers cognitiveservices from hostname", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.cognitiveservices.azure.com',
+      endpointStyle: 'auto',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
+  });
+
+  it("endpointStyle 'auto' still infers foundry from non-cognitiveservices hostname", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-project.services.ai.azure.com/models',
+      endpointStyle: 'auto',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('DeepSeek-R1').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).not.toContain('/deployments/');
+    expect(requests[0].body).toHaveProperty('model', 'DeepSeek-R1');
+  });
+
+  it("endpointStyle 'cognitive-services' respects custom apiVersion", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-org.azure-api.net',
+      endpointStyle: 'cognitive-services',
+      apiVersion: '2025-03-01',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toContain('api-version=2025-03-01');
+  });
 });
