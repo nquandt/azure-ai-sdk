@@ -249,6 +249,14 @@ The unit tests (`provider`, `generate`, `stream`) run entirely with in-memory mo
 
 ---
 
+## Further reading
+
+- [Using with OpenCode](docs/opencode.md)
+- [APIM integration](docs/apim-integration.md)
+- [Custom provider reference](docs/custom-provider.md)
+
+---
+
 ## License
 
 MIT

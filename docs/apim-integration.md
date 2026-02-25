@@ -1,120 +1,107 @@
 # APIM Integration
 
-This document describes what is required to use `@nquandt/azure-ai-sdk` with an Azure API Management (APIM)
-instance that proxies Azure AI Foundry endpoints, and the specific changes needed to the `naq-testai-eus-apim`
-gateway before the SDK can authenticate successfully against it.
+This document describes how to use `@nquandt/azure-ai-sdk` with an Azure API Management (APIM) gateway that proxies Azure AI Foundry endpoints.
+
+---
 
 ## How the SDK authenticates
 
-The provider uses `DefaultAzureCredential` (or any `TokenCredential` you supply) with a fixed OAuth2 scope to
-obtain a Bearer token for every request:
+The provider uses `DefaultAzureCredential` (or any `TokenCredential` you supply) to obtain a Bearer token for every request. The default OAuth2 scope depends on the endpoint type:
 
 | Endpoint type | Default scope |
 |---|---|
 | `*.cognitiveservices.azure.com` | `https://cognitiveservices.azure.com/.default` |
 | `*.services.ai.azure.com/models` | `https://cognitiveservices.azure.com/.default` |
-| Custom (APIM, etc.) | Pass `scope` option to `createAzureFoundry` |
+| Custom (APIM, etc.) | Set the `scope` option on `createAzureFoundry` |
 
-When targeting APIM, the scope can be overridden:
+---
 
-```ts
-const foundry = createAzureFoundry({
-  endpoint: 'https://naq-testai-eus-apim.azure-api.net/openai',
-  scope: 'https://ai.azure.com/.default', // or the app registration scope
-});
-```
+## Basic APIM setup
 
-## Current blockers
-
-The `naq-testai-eus-apim` gateway has a `validate-jwt` policy (in the `ai-validate-entra-token` policy
-fragment) that only accepts tokens with these audiences:
-
-```xml
-<audiences>
-  <audience>{{entra-client-id}}</audience>       <!-- f909a0cd-5a8c-4dd0-a0db-8a2f85529fe1 -->
-  <audience>api://{{entra-client-id}}</audience>
-</audiences>
-```
-
-Neither of those is a scope that `DefaultAzureCredential` or `az login` will produce without extra
-configuration. The two scopes those tools produce by default — and that Azure AI Foundry itself accepts —
-are explicitly rejected by the current APIM policy.
-
-### Required APIM policy change
-
-Add the following two `<audience>` entries to the `ai-validate-entra-token` policy fragment so that tokens
-obtained with either of the standard Azure AI scopes are accepted:
-
-```xml
-<audiences>
-  <audience>{{entra-client-id}}</audience>
-  <audience>api://{{entra-client-id}}</audience>
-  <!-- Add these two so DefaultAzureCredential / az login works without a custom scope -->
-  <audience>https://cognitiveservices.azure.com</audience>
-  <audience>https://ai.azure.com</audience>
-</audiences>
-```
-
-With this change, callers can use the SDK against APIM with zero extra configuration — the same
-`createAzureFoundry({ endpoint })` call works for both direct Foundry and APIM.
-
-### Why these two audiences
-
-- `https://cognitiveservices.azure.com` — the scope Azure AI Foundry itself validates. This is what
-  `DefaultAzureCredential` requests when the SDK default scope is used, and what `az account get-access-token`
-  returns by default for Cognitive Services resources.
-- `https://ai.azure.com` — the newer Azure AI platform scope. Also accepted by Azure AI Foundry directly.
-  Confirmed working against `naq-test-ai-eus2-resource` in testing.
-
-Both are tenant-scoped (the `issuers` block already restricts to `{{entra-tenant-id}}`), so accepting these
-audiences does not open the gateway to tokens from other tenants.
-
-## Workaround (until APIM is updated)
-
-Pass the custom app registration scope explicitly when creating the provider:
+Point the SDK at your APIM gateway URL and, if your gateway validates a custom app registration audience, pass the matching scope:
 
 ```ts
 import { createAzureFoundry } from '@nquandt/azure-ai-sdk';
 
 const foundry = createAzureFoundry({
-  endpoint: 'https://naq-testai-eus-apim.azure-api.net/openai',
-  scope: 'api://f909a0cd-5a8c-4dd0-a0db-8a2f85529fe1/.default',
+  endpoint: 'https://<your-apim>.azure-api.net/openai',
+  scope: 'api://<your-app-registration-client-id>/.default',
 });
 ```
 
-Callers using `az login` can get a token for this scope with:
+For local development, authenticate first with the Azure CLI:
 
 ```bash
-az account get-access-token --scope "api://f909a0cd-5a8c-4dd0-a0db-8a2f85529fe1/.default"
+az login
+az account get-access-token --scope "api://<your-app-registration-client-id>/.default"
 ```
 
-`DefaultAzureCredential` will resolve this automatically at runtime — no additional credential configuration is
-needed beyond being logged in to the correct tenant.
+`DefaultAzureCredential` resolves the token automatically at runtime — no additional credential configuration is needed beyond being logged in to the correct tenant.
 
-## APIM endpoint URL
+---
 
-The gateway base URL for the AI Gateway API is:
+## APIM JWT validation policy
 
+A common APIM pattern is a `validate-jwt` policy that restricts which token audiences are accepted. If your policy only allows your app registration's audience, tokens from `DefaultAzureCredential` using the standard Azure AI scopes will be rejected.
+
+To allow callers to use the SDK without a custom `scope` option, add the standard Azure AI audiences to your `validate-jwt` policy:
+
+```xml
+<audiences>
+  <audience>{{entra-client-id}}</audience>
+  <audience>api://{{entra-client-id}}</audience>
+  <!-- Allow standard Azure AI scopes so DefaultAzureCredential works out of the box -->
+  <audience>https://cognitiveservices.azure.com</audience>
+  <audience>https://ai.azure.com</audience>
+</audiences>
 ```
-https://naq-testai-eus-apim.azure-api.net/openai
-```
 
-The SDK treats this as a cognitiveservices-style endpoint (deployment name in URL path) since the hostname does
-not match `cognitiveservices.azure.com` or `services.ai.azure.com`. The URL format it will use is:
+**Why these two audiences:**
 
-```
-/openai/deployments/{modelId}/chat/completions?api-version=2024-10-21
-```
+- `https://cognitiveservices.azure.com` — the scope Azure AI Foundry itself validates, and what `DefaultAzureCredential` requests by default when the SDK's default scope is used.
+- `https://ai.azure.com` — the newer Azure AI platform scope, also accepted directly by Azure AI Foundry.
 
-This matches the `ChatCompletions_Create` operation registered on the APIM API
-(`/deployments/{deployment-id}/chat/completions`).
+Both are tenant-scoped — if your `issuers` block already restricts to your tenant ID, accepting these audiences does not open the gateway to tokens from other tenants.
 
-The APIM gateway also exposes a unified routing endpoint at `/deployments/unified/chat/completions` that routes
-by `model` in the request body. This maps to the `services.ai.azure.com/models` endpoint style in the SDK:
+---
+
+## URL routing through APIM
+
+The SDK infers the URL format from the endpoint hostname:
+
+| Endpoint hostname | URL pattern | Model sent in |
+|---|---|---|
+| `*.cognitiveservices.azure.com` | `/openai/deployments/{model}/chat/completions?api-version=...` | URL path |
+| `*.services.ai.azure.com` | `/chat/completions` | Request body |
+| **Anything else (APIM, custom)** | `/openai/deployments/{model}/chat/completions?api-version=...` | URL path |
+
+APIM hostnames fall into the "anything else" category and default to the deployment-path style. Make sure your APIM API is configured with a matching operation path (`/deployments/{deployment-id}/chat/completions`).
+
+### Unified routing endpoint
+
+If your APIM gateway exposes a unified routing endpoint that accepts a `model` field in the request body (similar to the AI Foundry serverless style), append the deployment path to your endpoint so the SDK sends the model in the body instead:
 
 ```ts
 const foundry = createAzureFoundry({
-  endpoint: 'https://naq-testai-eus-apim.azure-api.net/openai/deployments/unified',
-  // ^ SDK will call /chat/completions and send model in the request body
+  endpoint: 'https://<your-apim>.azure-api.net/openai/deployments/unified',
+  // SDK detects no deployment path to substitute and sends model in request body
 });
 ```
+
+---
+
+## Adapter type behind APIM
+
+When a deployment name in APIM doesn't match the underlying model family name, the SDK's automatic adapter detection won't work. Set `adapterType` explicitly per model:
+
+```ts
+const foundry = createAzureFoundry({
+  endpoint: 'https://<your-apim>.azure-api.net/openai',
+  scope: 'api://<your-app-registration-client-id>/.default',
+});
+
+// Deployment is named "my-chat-model" but it's backed by gpt-4o
+const model = foundry('my-chat-model', { adapterType: 'openai-legacy' });
+```
+
+See the main README for the full list of adapter types.
