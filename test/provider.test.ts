@@ -301,4 +301,55 @@ describe('createAzureFoundry — endpointStyle option', () => {
 
     expect(requests[0].url).toContain('api-version=2025-03-01');
   });
+
+  it("endpointStyle 'cognitive-services' strips trailing /openai from endpoint", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-org.azure-api.net/openai',
+      endpointStyle: 'cognitive-services',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    // Must not produce the doubled segment /openai/openai/
+    expect(requests[0].url).not.toContain('/openai/openai/');
+    expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
+  });
+
+  it("endpointStyle 'cognitive-services' strips trailing /openai/ (with trailing slash) from endpoint", async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-org.azure-api.net/openai/',
+      endpointStyle: 'cognitive-services',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).not.toContain('/openai/openai/');
+    expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
+  });
+
+  it("endpointStyle 'cognitive-services' strips trailing /openai from cognitiveservices endpoint", async () => {
+    // Ensure the normalization also fires for auto-detected cognitive-services endpoints
+    // if the user appends /openai to the hostname-based endpoint.
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.cognitiveservices.azure.com/openai',
+      endpointStyle: 'auto',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).not.toContain('/openai/openai/');
+    expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
+  });
 });

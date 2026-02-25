@@ -269,6 +269,12 @@ const foundry = createAzureFoundry({
 });
 ```
 
+> **Note:** Do not include `/openai` in the `endpoint` value. The provider
+> appends `/openai/deployments/{model}/...` automatically. If a trailing
+> `/openai` segment is present (a common copy-paste from APIM or Azure portal
+> URLs), the provider strips it silently so the correct path is produced either
+> way.
+
 ### 2. OAuth scope
 
 APIM validates tokens against its **own Entra app registration**, not the

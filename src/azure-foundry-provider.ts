@@ -275,7 +275,13 @@ export function createAzureFoundry(
 
   const buildUrl = (modelId: string): string => {
     if (isCognitiveServices) {
-      return `${endpoint}/openai/deployments/${encodeURIComponent(modelId)}/chat/completions?api-version=${apiVersion}`;
+      // Strip a trailing `/openai` that callers may have included in the endpoint.
+      // We always append `/openai/deployments/...` ourselves, so including it in
+      // the endpoint would produce a doubled path segment:
+      //   https://my-org.azure-api.net/openai/openai/deployments/...  ← wrong
+      //   https://my-org.azure-api.net/openai/deployments/...         ← correct
+      const base = endpoint.replace(/\/openai\/?$/i, '');
+      return `${base}/openai/deployments/${encodeURIComponent(modelId)}/chat/completions?api-version=${apiVersion}`;
     }
     return `${endpoint}/chat/completions`;
   };
