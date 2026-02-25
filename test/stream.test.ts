@@ -13,7 +13,7 @@ import {
   toolCallDeltaChunk,
   toolCallArgsDeltaChunk,
 } from './helpers.js';
-import type { LanguageModelV1StreamPart } from '@ai-sdk/provider';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 
 const ENDPOINT = 'https://my-resource.cognitiveservices.azure.com';
 
@@ -24,12 +24,10 @@ function makeModel(fetch: typeof globalThis.fetch, modelId = 'gpt-test') {
 /** Drain a doStream result into an array of parts */
 async function collectStream(model: ReturnType<typeof makeModel>, prompt = 'hi') {
   const { stream } = await model.doStream({
-    inputFormat: 'messages',
-    mode: { type: 'regular' },
     prompt: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
   });
 
-  const parts: LanguageModelV1StreamPart[] = [];
+  const parts: LanguageModelV2StreamPart[] = [];
   const reader = stream.getReader();
   while (true) {
     const { done, value } = await reader.read();
@@ -61,7 +59,7 @@ describe('doStream — basic text streaming', () => {
       finishChunk(),
     ]);
     const parts = await collectStream(makeModel(fetch));
-    const deltas = parts.filter(p => p.type === 'text-delta').map(p => (p as any).textDelta);
+    const deltas = parts.filter(p => p.type === 'text-delta').map(p => (p as any).delta);
 
     expect(deltas).toEqual(['Hello', ', ', 'world']);
   });
@@ -99,15 +97,15 @@ describe('doStream — basic text streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.usage).toEqual({ promptTokens: 8, completionTokens: 12 });
+    expect(finish.usage).toEqual({ inputTokens: 8, outputTokens: 12, totalTokens: undefined });
   });
 
-  it('finish usage defaults to zero when not in stream', async () => {
+  it('finish usage defaults to undefined when not in stream', async () => {
     const { fetch } = fakeStreamFetch([textDeltaChunk('hi'), finishChunk('stop')]);
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.usage).toEqual({ promptTokens: 0, completionTokens: 0 });
+    expect(finish.usage).toEqual({ inputTokens: undefined, outputTokens: undefined, totalTokens: undefined });
   });
 
   it('full text can be reconstructed from deltas', async () => {
@@ -120,10 +118,16 @@ describe('doStream — basic text streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const text = parts
       .filter(p => p.type === 'text-delta')
-      .map(p => (p as any).textDelta)
+      .map(p => (p as any).delta)
       .join('');
 
     expect(text).toBe('The quick brown fox');
+  });
+
+  it('emits stream-start as first part carrying warnings', async () => {
+    const { fetch } = fakeStreamFetch([textDeltaChunk('hi'), finishChunk()]);
+    const parts = await collectStream(makeModel(fetch));
+    expect(parts[0].type).toBe('stream-start');
   });
 });
 
@@ -132,18 +136,18 @@ describe('doStream — basic text streaming', () => {
 // ---------------------------------------------------------------------------
 
 describe('doStream — tool call streaming', () => {
-  it('emits tool-call-delta parts as arguments stream in', async () => {
+  it('emits tool-input-start and tool-input-delta parts as arguments stream in', async () => {
     const { fetch } = fakeStreamFetch([
       toolCallDeltaChunk(0, 'tc-1', 'get_weather', '{"ci'),
       toolCallArgsDeltaChunk(0, 'ty":"NYC"}'),
       finishChunk('tool_calls'),
     ]);
     const parts = await collectStream(makeModel(fetch));
-    const deltas = parts.filter(p => p.type === 'tool-call-delta');
+    const inputStart = parts.find(p => p.type === 'tool-input-start') as any;
 
-    expect(deltas.length).toBeGreaterThanOrEqual(1);
-    expect((deltas[0] as any).toolName).toBe('get_weather');
-    expect((deltas[0] as any).toolCallId).toBe('tc-1');
+    expect(inputStart).toBeDefined();
+    expect(inputStart.toolName).toBe('get_weather');
+    expect(inputStart.id).toBe('tc-1');
   });
 
   it('emits a completed tool-call part in flush', async () => {
@@ -156,7 +160,7 @@ describe('doStream — tool call streaming', () => {
 
     expect(toolCall).toBeDefined();
     expect(toolCall.toolName).toBe('get_weather');
-    expect(toolCall.args).toContain('NYC');
+    expect(toolCall.input).toContain('NYC');
   });
 
   it('accumulates split argument deltas into a single tool-call', async () => {
@@ -168,7 +172,7 @@ describe('doStream — tool call streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const toolCall = parts.find(p => p.type === 'tool-call') as any;
 
-    expect(toolCall.args).toBe('{"q":"hello world"}');
+    expect(toolCall.input).toBe('{"q":"hello world"}');
   });
 
   it('handles multiple concurrent tool calls', async () => {

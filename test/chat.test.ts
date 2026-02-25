@@ -51,8 +51,8 @@ describe.skipIf(!foundryReady)('Azure AI Foundry — direct', () => {
 
     expect(result.text).toBeTruthy();
     expect(result.finishReason).toBe('stop');
-    expect(result.usage.promptTokens).toBeGreaterThan(0);
-    expect(result.usage.completionTokens).toBeGreaterThan(0);
+    expect(result.usage.inputTokens).toBeGreaterThan(0);
+    expect(result.usage.outputTokens).toBeGreaterThan(0);
   });
 
   it('streamText streams chunks and completes', async () => {
@@ -117,8 +117,8 @@ describe.skipIf(!apimReady)('Azure AI Foundry — APIM gateway', () => {
 
     expect(result.text).toBeTruthy();
     expect(result.finishReason).toBe('stop');
-    expect(result.usage.promptTokens).toBeGreaterThan(0);
-    expect(result.usage.completionTokens).toBeGreaterThan(0);
+    expect(result.usage.inputTokens).toBeGreaterThan(0);
+    expect(result.usage.outputTokens).toBeGreaterThan(0);
   });
 
   it('streamText streams chunks and completes via APIM', async () => {

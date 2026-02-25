@@ -13,9 +13,9 @@
 // (and optionally a credential) to get a provider instance:
 //
 //   const foundry = createAzureFoundry({ endpoint: '...' });
-//   const model   = foundry('DeepSeek-R1');               // LanguageModelV1
+//   const model   = foundry('DeepSeek-R1');               // LanguageModelV2
 //   const model   = foundry.chat('DeepSeek-R1');           // same, explicit
-//   const model   = foundry.languageModel('DeepSeek-R1'); // same, via ProviderV1
+//   const model   = foundry.languageModel('DeepSeek-R1'); // same, via ProviderV2
 //
 export { createAzureFoundry } from './azure-foundry-provider.js';
 export type { AzureFoundryProvider, AzureFoundryProviderSettings } from './azure-foundry-provider.js';

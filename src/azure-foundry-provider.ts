@@ -1,4 +1,4 @@
-import { LanguageModelV1, NoSuchModelError, ProviderV1 } from '@ai-sdk/provider';
+import { LanguageModelV2, NoSuchModelError, ProviderV2 } from '@ai-sdk/provider';
 import { FetchFunction, withoutTrailingSlash } from '@ai-sdk/provider-utils';
 import {
   DefaultAzureCredential,
@@ -56,11 +56,6 @@ export interface AzureFoundryProviderSettings {
    *   - Azure CLI (`az login`)
    *   - Azure PowerShell
    *   - Visual Studio Code
-   *
-   * You can pass any `TokenCredential` from `@azure/identity`, for example:
-   *   - new ClientSecretCredential(tenantId, clientId, clientSecret)
-   *   - new ManagedIdentityCredential(clientId)
-   *   - new WorkloadIdentityCredential()
    */
   credential?: TokenCredential;
 
@@ -87,14 +82,14 @@ export interface AzureFoundryProviderSettings {
 // Provider interface
 // ---------------------------------------------------------------------------
 
-export interface AzureFoundryProvider extends ProviderV1 {
+export interface AzureFoundryProvider extends ProviderV2 {
   /**
    * Create a language model instance for the given deployment name.
    */
   (
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
-  ): LanguageModelV1;
+  ): LanguageModelV2;
 
   /**
    * Create a language model instance for the given deployment name.
@@ -102,7 +97,7 @@ export interface AzureFoundryProvider extends ProviderV1 {
   languageModel(
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
-  ): LanguageModelV1;
+  ): LanguageModelV2;
 
   /**
    * Create a chat model instance for the given deployment name.
@@ -110,7 +105,7 @@ export interface AzureFoundryProvider extends ProviderV1 {
   chat(
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
-  ): LanguageModelV1;
+  ): LanguageModelV2;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +234,7 @@ export function createAzureFoundry(
     throw new NoSuchModelError({ modelId, modelType: 'imageModel' });
   };
 
-  return provider as AzureFoundryProvider;
+  return provider as unknown as AzureFoundryProvider;
 }
 
 // ---------------------------------------------------------------------------

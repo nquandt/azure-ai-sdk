@@ -59,8 +59,6 @@ describe('createAzureFoundry — provider construction', () => {
       fetch,
     });
     await foundry('gpt-test').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
     expect(requests[0].url).not.toContain('//openai');
@@ -76,8 +74,6 @@ describe('createAzureFoundry — URL routing', () => {
       fetch,
     });
     await foundry('gpt-4o').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -93,8 +89,6 @@ describe('createAzureFoundry — URL routing', () => {
       fetch,
     });
     await foundry('gpt-4o').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -110,8 +104,6 @@ describe('createAzureFoundry — URL routing', () => {
       fetch,
     });
     await foundry('gpt-4o').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -126,8 +118,6 @@ describe('createAzureFoundry — URL routing', () => {
       fetch,
     });
     await foundry('DeepSeek-R1').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -144,8 +134,6 @@ describe('createAzureFoundry — URL routing', () => {
       fetch,
     });
     await foundry('my model/v2').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -162,8 +150,6 @@ describe('createAzureFoundry — authentication', () => {
       fetch,
     });
     await foundry('gpt-test').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -179,8 +165,6 @@ describe('createAzureFoundry — authentication', () => {
       fetch,
     });
     await foundry('gpt-test').doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 

@@ -25,8 +25,6 @@ describe('doGenerate — request shape', () => {
   it('sends messages in the request body', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hello'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [
         { role: 'system', content: 'You are helpful.' },
         { role: 'user', content: [{ type: 'text', text: 'hi' }] },
@@ -44,8 +42,6 @@ describe('doGenerate — request shape', () => {
   it('does not send temperature when it is 0 (SDK default)', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       temperature: 0,
     });
@@ -56,8 +52,6 @@ describe('doGenerate — request shape', () => {
   it('sends temperature when explicitly set to non-zero', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       temperature: 0.7,
     });
@@ -65,13 +59,11 @@ describe('doGenerate — request shape', () => {
     expect(requests[0].body).toHaveProperty('temperature', 0.7);
   });
 
-  it('sends maxTokens as max_tokens', async () => {
+  it('sends maxOutputTokens as max_tokens', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
-      maxTokens: 512,
+      maxOutputTokens: 512,
     });
 
     expect(requests[0].body).toHaveProperty('max_tokens', 512);
@@ -80,8 +72,6 @@ describe('doGenerate — request shape', () => {
   it('sends stop sequences', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       stopSequences: ['STOP', 'END'],
     });
@@ -92,17 +82,13 @@ describe('doGenerate — request shape', () => {
   it('sends tools in regular mode', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: {
-        type: 'regular',
-        tools: [{
-          type: 'function',
-          name: 'get_weather',
-          description: 'Get weather',
-          parameters: { type: 'object', properties: { city: { type: 'string' } } },
-        }],
-        toolChoice: { type: 'auto' },
-      },
+      tools: [{
+        type: 'function',
+        name: 'get_weather',
+        description: 'Get weather',
+        inputSchema: { type: 'object', properties: { city: { type: 'string' } } },
+      }],
+      toolChoice: { type: 'auto' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'weather?' }] }],
     });
 
@@ -115,8 +101,8 @@ describe('doGenerate — request shape', () => {
   it('sends tool_choice:none', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular', tools: [], toolChoice: { type: 'none' } },
+      tools: [],
+      toolChoice: { type: 'none' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -126,17 +112,13 @@ describe('doGenerate — request shape', () => {
   it('sends specific tool_choice by name', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: {
-        type: 'regular',
-        tools: [{
-          type: 'function',
-          name: 'my_tool',
-          description: 'desc',
-          parameters: {},
-        }],
-        toolChoice: { type: 'tool', toolName: 'my_tool' },
-      },
+      tools: [{
+        type: 'function',
+        name: 'my_tool',
+        description: 'desc',
+        inputSchema: {},
+      }],
+      toolChoice: { type: 'tool', toolName: 'my_tool' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -149,8 +131,7 @@ describe('doGenerate — request shape', () => {
   it('injects JSON instruction message in object-json mode', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('{"foo":1}'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'object-json', schema: {}, name: undefined, description: undefined },
+      responseFormat: { type: 'json' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'give me json' }] }],
     });
 
@@ -163,8 +144,6 @@ describe('doGenerate — request shape', () => {
   it('does not include undefined keys in the body', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -182,19 +161,16 @@ describe('doGenerate — response parsing', () => {
   it('returns the text content', async () => {
     const { fetch } = fakeFetch(chatResponse('Hello, world!'));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.text).toBe('Hello, world!');
+    const textPart = result.content.find(p => p.type === 'text');
+    expect(textPart?.text).toBe('Hello, world!');
   });
 
   it('maps finish_reason stop → stop', async () => {
     const { fetch } = fakeFetch(chatResponse('hi', { finishReason: 'stop' }));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -204,8 +180,6 @@ describe('doGenerate — response parsing', () => {
   it('maps finish_reason length → length', async () => {
     const { fetch } = fakeFetch(chatResponse('hi', { finishReason: 'length' }));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -215,8 +189,6 @@ describe('doGenerate — response parsing', () => {
   it('maps finish_reason content_filter → content-filter', async () => {
     const { fetch } = fakeFetch(chatResponse('', { finishReason: 'content_filter' }));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -229,8 +201,6 @@ describe('doGenerate — response parsing', () => {
       toolCalls: [{ id: 'tc1', name: 'fn', arguments: '{}' }],
     }));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
@@ -240,12 +210,10 @@ describe('doGenerate — response parsing', () => {
   it('returns usage token counts', async () => {
     const { fetch } = fakeFetch(chatResponse('hi', { promptTokens: 15, completionTokens: 25 }));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.usage).toEqual({ promptTokens: 15, completionTokens: 25 });
+    expect(result.usage).toEqual({ inputTokens: 15, outputTokens: 25, totalTokens: 40 });
   });
 
   it('returns tool calls from the response', async () => {
@@ -254,29 +222,25 @@ describe('doGenerate — response parsing', () => {
       toolCalls: [{ id: 'tc1', name: 'get_weather', arguments: '{"city":"NYC"}' }],
     }));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'weather?' }] }],
     });
 
-    expect(result.toolCalls).toHaveLength(1);
-    expect(result.toolCalls![0]).toMatchObject({
-      toolCallType: 'function',
+    const toolCalls = result.content.filter(p => p.type === 'tool-call');
+    expect(toolCalls).toHaveLength(1);
+    expect(toolCalls[0]).toMatchObject({
       toolCallId: 'tc1',
       toolName: 'get_weather',
-      args: '{"city":"NYC"}',
+      input: '{"city":"NYC"}',
     });
   });
 
-  it('includes rawCall with the request body', async () => {
+  it('includes request body in result', async () => {
     const { fetch } = fakeFetch(chatResponse('hi'));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.rawCall.rawPrompt).toHaveProperty('messages');
+    expect(result.request?.body).toHaveProperty('messages');
   });
 });
 
@@ -288,8 +252,6 @@ describe('doGenerate — unsupported setting warnings', () => {
   it('warns on topK', async () => {
     const { fetch } = fakeFetch(chatResponse('hi'));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       topK: 5,
     });
@@ -300,8 +262,6 @@ describe('doGenerate — unsupported setting warnings', () => {
   it('warns on presencePenalty', async () => {
     const { fetch } = fakeFetch(chatResponse('hi'));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       presencePenalty: 0.5,
     });
@@ -312,8 +272,6 @@ describe('doGenerate — unsupported setting warnings', () => {
   it('warns on frequencyPenalty', async () => {
     const { fetch } = fakeFetch(chatResponse('hi'));
     const result = await makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       frequencyPenalty: 0.5,
     });
@@ -330,8 +288,6 @@ describe('doGenerate — error handling', () => {
   it('throws on 401 Unauthorized', async () => {
     const { fetch } = fakeErrorFetch({ error: { message: 'Unauthorized', code: '401' } }, 401);
     await expect(makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     })).rejects.toThrow();
   });
@@ -339,8 +295,6 @@ describe('doGenerate — error handling', () => {
   it('throws on 429 Too Many Requests', async () => {
     const { fetch } = fakeErrorFetch({ error: { message: 'Rate limit exceeded', code: '429' } }, 429);
     await expect(makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     })).rejects.toThrow();
   });
@@ -348,8 +302,6 @@ describe('doGenerate — error handling', () => {
   it('throws on 500 Internal Server Error', async () => {
     const { fetch } = fakeErrorFetch({ error: { message: 'Internal error', code: '500' } }, 500);
     await expect(makeModel(fetch).doGenerate({
-      inputFormat: 'messages',
-      mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     })).rejects.toThrow();
   });
