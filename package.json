@@ -1,0 +1,61 @@
+{
+  "name": "@nquandt/azure-ai-sdk",
+  "version": "0.1.0",
+  "description": "Vercel AI SDK custom provider for Azure AI Foundry using Azure Entra identity authentication",
+  "license": "MIT",
+  "author": "nquandt",
+  "homepage": "https://github.com/nquandt/azure-ai-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nquandt/azure-ai-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nquandt/azure-ai-sdk/issues"
+  },
+  "keywords": [
+    "ai",
+    "azure",
+    "azure-ai-foundry",
+    "vercel-ai-sdk",
+    "ai-sdk",
+    "custom-provider",
+    "llm"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "ai": ">=4.0.0"
+  },
+  "dependencies": {
+    "@ai-sdk/provider": "^1.1.3",
+    "@ai-sdk/provider-utils": "^2.2.8",
+    "@azure/identity": "^4.10.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "ai": "^4.3.15",
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.18"
+  }
+}
