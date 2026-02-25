@@ -12,7 +12,7 @@
  */
 
 import { generateText, streamText } from 'ai';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createAzureFoundry } from '../src/index.js';
 
 // ---------------------------------------------------------------------------
@@ -33,8 +33,12 @@ const APIM_SCOPE       = process.env.AZURE_APIM_SCOPE;
 const foundryReady = Boolean(FOUNDRY_ENDPOINT && FOUNDRY_MODEL);
 
 describe.skipIf(!foundryReady)('Azure AI Foundry — direct', () => {
-  const foundry = createAzureFoundry({ endpoint: FOUNDRY_ENDPOINT! });
-  const model   = foundry(FOUNDRY_MODEL!);
+  let model: ReturnType<ReturnType<typeof createAzureFoundry>>;
+
+  beforeEach(() => {
+    const foundry = createAzureFoundry({ endpoint: FOUNDRY_ENDPOINT! });
+    model = foundry(FOUNDRY_MODEL!);
+  });
 
   it('generateText returns a non-empty response', async () => {
     const result = await generateText({
@@ -92,11 +96,15 @@ describe.skipIf(!foundryReady)('Azure AI Foundry — direct', () => {
 const apimReady = false; // flip to: Boolean(APIM_ENDPOINT && APIM_MODEL && APIM_SCOPE)
 
 describe.skipIf(!apimReady)('Azure AI Foundry — APIM gateway', () => {
-  const foundry = createAzureFoundry({
-    endpoint: APIM_ENDPOINT!,
-    scope: APIM_SCOPE!,
+  let model: ReturnType<ReturnType<typeof createAzureFoundry>>;
+
+  beforeEach(() => {
+    const foundry = createAzureFoundry({
+      endpoint: APIM_ENDPOINT!,
+      scope: APIM_SCOPE!,
+    });
+    model = foundry(APIM_MODEL!);
   });
-  const model = foundry(APIM_MODEL!);
 
   it('generateText returns a non-empty response via APIM', async () => {
     const result = await generateText({
