@@ -166,9 +166,26 @@ When the deployment name in your project doesn’t match the underlying model fa
 
 ## Troubleshooting
 
-### `ProviderInitError` on Claude (Sonnet, etc.)
+### `ProviderInitError` or Claude failing while GPT/Kimi work
 
-This SDK is **not** the same npm package as OpenCode’s built-in Anthropic integration (`@ai-sdk/anthropic`). If your **global** config (`~/.config/opencode/opencode.json`) defines a separate provider for Azure Anthropic (for example `azure-anthropic` with `"npm": "@ai-sdk/anthropic"` and `baseURL` ending in `/anthropic/v1`) **and** you list the **same model key** on both that provider and `azure-foundry` (e.g. `claude-sonnet-4-6`), OpenCode may resolve the **short** model name to the **wrong** provider. The Anthropic SDK factory can then throw **ProviderInitError** during init.
+**Stale OpenCode npm cache:** OpenCode keeps a **separate** npm lock under its own data directory — not your repo. On Windows this is typically `%USERPROFILE%\.cache\opencode\package.json` (plus `node_modules` beside it). That file may still pin an old `"@nquandt/azure-ai-sdk": "0.4.x"` even if your project `opencode.json` says `"npm": "@nquandt/azure-ai-sdk"`. OpenCode then loads the **cached** version (missing `resourceName`, wrong Claude URLs, older Provider V3 surface), which often shows up as **ProviderInitError** on Claude while GPT/Kimi appear to work.
+
+**Fix:** Pin a current release in **both** places if you like, then upgrade the cache install:
+
+```json
+"npm": "@nquandt/azure-ai-sdk@0.5.12"
+```
+
+From a shell:
+
+```bash
+cd ~/.cache/opencode   # or %USERPROFILE%\.cache\opencode on Windows Git Bash
+npm install @nquandt/azure-ai-sdk@0.5.12 --save
+```
+
+Alternatively edit `.cache/opencode/package.json` to set the dependency version and run `npm install` there. Restart OpenCode after updating.
+
+**Duplicate Claude providers:** This SDK is **not** the same npm package as OpenCode’s built-in Anthropic integration (`@ai-sdk/anthropic`). If your **global** config (`~/.config/opencode/opencode.json`) defines a separate provider for Azure Anthropic (for example `azure-anthropic` with `"npm": "@ai-sdk/anthropic"` and `baseURL` ending in `/anthropic/v1`) **and** you list the **same model key** on both that provider and `azure-foundry` (e.g. `claude-sonnet-4-6`), OpenCode may resolve the **short** model name to the **wrong** provider. The Anthropic SDK factory can then throw **ProviderInitError** during init.
 
 **Fix (pick one):**
 
