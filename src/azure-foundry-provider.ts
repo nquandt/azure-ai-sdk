@@ -1,7 +1,7 @@
 import { LanguageModelV3, NoSuchModelError, ProviderV3 } from '@ai-sdk/provider';
 import { FetchFunction, withoutTrailingSlash } from '@ai-sdk/provider-utils';
 import type { TokenCredential } from '@azure/identity';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname } from 'node:path';
 import {
@@ -308,11 +308,18 @@ export function createAzureFoundry(
     if (!debugFilePath) return;
     try {
       mkdirSync(dirname(debugFilePath), { recursive: true });
-      appendFileSync(debugFilePath, `[${new Date().toISOString()}] [${level}] ${msg}\n`);
+      // Overwrite on the first call each process run, append thereafter.
+      if (debugLog.firstWrite) {
+        debugLog.firstWrite = false;
+        writeFileSync(debugFilePath, `[${new Date().toISOString()}] [${level}] ${msg}\n`);
+      } else {
+        appendFileSync(debugFilePath, `[${new Date().toISOString()}] [${level}] ${msg}\n`);
+      }
     } catch {
       // never let debug logging break the provider
     }
   }
+  debugLog.firstWrite = true;
 
   debugLog('INFO', `createAzureFoundry called — options: ${JSON.stringify({
     hasResourceName: !!options.resourceName,
