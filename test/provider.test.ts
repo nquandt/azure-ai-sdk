@@ -162,7 +162,7 @@ describe('createAzureFoundry — URL routing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/api/projects/my-project/chat/completions?api-version=2024-10-21');
+    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/api/projects/my-project/chat/completions?api-version=2025-01-01-preview');
     expect(requests[0].body).toHaveProperty('model', 'gpt-5-nano');
   });
 

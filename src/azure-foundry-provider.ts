@@ -396,7 +396,12 @@ export function createAzureFoundry(
   })();
 
   const isCognitiveServices = resolvedStyle === 'cognitive-services';
-  const apiVersion = options.apiVersion ?? '2024-10-21';
+  // cognitiveservices.azure.com (Azure OpenAI) uses the OpenAI GA api-version.
+  // services.ai.azure.com/api/projects/ (AI Foundry project-scoped) uses the
+  // AI Foundry inference api-version — 2024-10-21 is NOT supported there.
+  const isProjectScoped = endpoint.includes('/api/projects/');
+  const defaultApiVersion = isProjectScoped ? 'v1' : '2024-10-21';
+  const apiVersion = options.apiVersion ?? defaultApiVersion;
 
   const buildUrl = (modelId: string, urlSuffix = '/chat/completions'): string => {
     if (isCognitiveServices) {

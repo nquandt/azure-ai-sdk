@@ -88,6 +88,13 @@ npm test
 Do not add `createAzureFoundry(...)` calls at the top level of `describe` blocks — construction must happen
 inside `beforeEach` so `describe.skipIf` can suppress execution before the call is reached.
 
+**Before shipping any change that touches URL construction or `api-version` defaults, run the integration
+tests locally against a real endpoint.** Unit tests only assert that URLs are constructed the way the test
+was written — they cannot catch a mismatch between what the code generates and what the Azure service
+actually accepts. The integration tests in `test/chat.test.ts` cover every endpoint style; ensure your
+`.env` has entries for all four scenarios (resource `/models`, project-scoped `/api/projects/`, Anthropic,
+APIM) before considering a URL-routing change validated.
+
 ### CI
 
 The GitHub Actions workflow (`publish.yml`) runs with no Azure secrets, so integration tests are always skipped
