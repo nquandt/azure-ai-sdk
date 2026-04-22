@@ -123,7 +123,9 @@ Different model families use different request/response wire formats. The SDK de
 |---|---|---|
 | `openai` | `o1`, `o3`, `gpt-5*`, `gpt-4.5*` | o-series, gpt-5+ (`max_completion_tokens`) |
 | `openai-legacy` | `gpt-4o*`, `gpt-4*`, `gpt-35*`, `gpt-3.5*`, `kimi*` | gpt-4o, gpt-4, Kimi K2.5 (`max_tokens`) |
-| `anthropic` | `claude*` | Claude models — routes to `/anthropic/v1/messages` |
+| `anthropic` | `claude*` | Claude — Anthropic Messages API at host `/anthropic/v1/messages` (not under `/models`) |
+
+For `*.services.ai.azure.com`, OpenAI-style models use `…/models/chat/completions`, while Claude calls `…/anthropic/v1/messages` on the same resource hostname (the SDK strips the trailing `/models` segment when routing Claude).
 
 As long as your deployment name matches one of the patterns above (e.g. `claude-sonnet-4-6`, `Kimi-K2.5`), no extra config is needed.
 

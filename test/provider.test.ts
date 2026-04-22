@@ -174,6 +174,26 @@ describe('createAzureFoundry — URL routing', () => {
     expect(requests[0].body).toHaveProperty('model', 'gpt-5-nano');
   });
 
+  it('services.ai.azure.com Claude calls /anthropic/v1/messages (not .../models/anthropic/...)', async () => {
+    const anthropicWire = {
+      content: [{ type: 'text', text: 'hello' }],
+      stop_reason: 'end_turn',
+      usage: { input_tokens: 1, output_tokens: 2 },
+    };
+    const { fetch, requests } = fakeFetch(anthropicWire);
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.services.ai.azure.com/models',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('claude-sonnet-4-6').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/anthropic/v1/messages');
+    expect(requests[0].body).toHaveProperty('model', 'claude-sonnet-4-6');
+  });
+
   it('resourceName takes precedence over endpoint', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({

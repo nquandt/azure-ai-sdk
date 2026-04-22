@@ -479,6 +479,13 @@ export function createAzureFoundry(
       }
       return `${base}/openai/deployments/${encodeURIComponent(modelId)}/chat/completions?api-version=${apiVersion}`;
     }
+    // Foundry inference: OpenAI-compatible chat lives under `.../models/chat/completions`.
+    // Anthropic (Claude) on the same host uses `.../anthropic/v1/messages` — there is no
+    // `/models` segment on that route (see Azure AI Foundry Anthropic integration).
+    if (urlSuffix !== '/chat/completions' && /\/models\/?$/i.test(endpoint)) {
+      const base = endpoint.replace(/\/models\/?$/i, '');
+      return `${base}${urlSuffix}`;
+    }
     return `${endpoint}${urlSuffix}`;
   };
 
