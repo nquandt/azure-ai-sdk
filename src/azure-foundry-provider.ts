@@ -368,12 +368,10 @@ export function createAzureFoundry(
               ...options.headers,
             };
           } catch (err) {
-            logger?.error(
-              '[azure-ai-sdk] Failed to acquire Azure token. ' +
-                `endpoint=${endpoint} scope=${scope} credentialType=${credentialType} ` +
-                `error=${err instanceof Error ? err.message : String(err)}`,
-            );
-            throw err;
+            const cause = err instanceof Error ? err.message : String(err);
+            const msg = `[azure-ai-sdk] Failed to acquire Azure token — endpoint=${endpoint} scope=${scope} credentialType=${credentialType} cause=${cause}`;
+            logger?.error(msg);
+            throw new Error(msg, { cause: err instanceof Error ? err : undefined });
           }
         };
       })();
