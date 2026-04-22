@@ -416,13 +416,9 @@ export function createAzureFoundry(
       return `${base}/openai/deployments/${encodeURIComponent(modelId)}/chat/completions?api-version=${apiVersion}`;
     }
     // AI Foundry project-scoped endpoints (/api/projects/…).
-    // Only append api-version if the caller explicitly provides one — the
-    // service selects the latest version when the parameter is absent.
+    // api-version is required by the service; default to the resolved apiVersion.
     if (endpoint.includes('/api/projects/')) {
-      const projectApiVersion = options.apiVersion;
-      return projectApiVersion
-        ? `${endpoint}${urlSuffix}?api-version=${projectApiVersion}`
-        : `${endpoint}${urlSuffix}`;
+      return `${endpoint}${urlSuffix}?api-version=${apiVersion}`;
     }
     return `${endpoint}${urlSuffix}`;
   };
