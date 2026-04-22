@@ -29,8 +29,10 @@ type AzureFoundryChatConfig = {
   provider: string;
   /**
    * Builds the full chat completions URL for a given deployment/model ID.
+   * Accepts an optional URL path suffix that the adapter may override
+   * (e.g. '/anthropic/v1/messages' instead of '/chat/completions').
    */
-  url: (modelId: string) => string;
+  url: (modelId: string, urlSuffix?: string) => string;
   /**
    * When true, the model ID is sent in the request body as `model`.
    * Used for AI Foundry inference endpoints (services.ai.azure.com/models).
@@ -96,8 +98,8 @@ export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
     const headers = await this.config.headers();
 
     const { value: response, responseHeaders } = await postJsonToApi({
-      url: this.config.url(this.modelId),
-      headers: combineHeaders(headers, options.headers, {
+      url: this.config.url(this.modelId, adapter.urlSuffix),
+      headers: combineHeaders(headers, adapter.additionalHeaders, options.headers, {
         'x-ms-useragent': `@nquandt/azure-ai-sdk/${VERSION}`,
       }),
       body,
@@ -144,8 +146,8 @@ export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
 
     const { value: stream, responseHeaders: streamResponseHeaders } =
       await postJsonToApi({
-        url: this.config.url(this.modelId),
-        headers: combineHeaders(headers, options.headers, {
+        url: this.config.url(this.modelId, adapter.urlSuffix),
+        headers: combineHeaders(headers, adapter.additionalHeaders, options.headers, {
           'x-ms-useragent': `@nquandt/azure-ai-sdk/${VERSION}`,
         }),
         body: { ...body, stream: true },

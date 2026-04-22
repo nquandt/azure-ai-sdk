@@ -19,28 +19,39 @@ import { createAzureFoundry } from '../src/index.js';
 // Env — all config comes from environment variables, never hardcoded
 // ---------------------------------------------------------------------------
 
-const FOUNDRY_ENDPOINT = process.env.AZURE_FOUNDRY_ENDPOINT;
+// The full endpoint URL — reads AZURE_FOUNDRY_ENDPOINT for backwards compat,
+// then falls back to AZURE_AI_FOUNDRY_ENDPOINT (the provider's own env var).
+const FOUNDRY_ENDPOINT = process.env.AZURE_FOUNDRY_ENDPOINT || process.env.AZURE_AI_FOUNDRY_ENDPOINT;
+const FOUNDRY_RESOURCE = process.env.AZURE_FOUNDRY_RESOURCE;
+const FOUNDRY_PROJECT  = process.env.AZURE_FOUNDRY_PROJECT;
 const FOUNDRY_MODEL    = process.env.AZURE_FOUNDRY_MODEL;
+const FOUNDRY_API_KEY  = process.env.AZURE_FOUNDRY_API_KEY;
+
+// Per-model endpoint overrides for multi-model testing
+const KIMI_ENDPOINT    = process.env.AZURE_FOUNDRY_KIMI_ENDPOINT;
+const KIMI_MODEL       = process.env.AZURE_FOUNDRY_KIMI_MODEL;
+const KIMI_API_KEY     = process.env.AZURE_FOUNDRY_KIMI_API_KEY;
+
+const CLAUDE_ENDPOINT  = process.env.AZURE_FOUNDRY_CLAUDE_ENDPOINT;
+const CLAUDE_MODEL     = process.env.AZURE_FOUNDRY_CLAUDE_MODEL;
+const CLAUDE_API_KEY   = process.env.AZURE_FOUNDRY_CLAUDE_API_KEY;
 
 const APIM_ENDPOINT    = process.env.AZURE_APIM_ENDPOINT;
 const APIM_MODEL       = process.env.AZURE_APIM_MODEL;
 const APIM_SCOPE       = process.env.AZURE_APIM_SCOPE;
 
-// ---------------------------------------------------------------------------
-// Tests — direct Azure AI Foundry
-// ---------------------------------------------------------------------------
-
-const foundryReady = Boolean(FOUNDRY_ENDPOINT && FOUNDRY_MODEL);
-
-describe.skipIf(!foundryReady)('Azure AI Foundry — direct', () => {
+// Helper to build a consistent test suite for any endpoint + model combination
+function createModelTests(
+  label: string,
+  makeModel: () => ReturnType<ReturnType<typeof createAzureFoundry>>,
+) {
   let model: ReturnType<ReturnType<typeof createAzureFoundry>>;
 
   beforeEach(() => {
-    const foundry = createAzureFoundry({ endpoint: FOUNDRY_ENDPOINT! });
-    model = foundry(FOUNDRY_MODEL!);
+    model = makeModel();
   });
 
-  it('generateText returns a non-empty response', async () => {
+  it(`[${label}] generateText returns a non-empty response`, async () => {
     const result = await generateText({
       model,
       messages: [
@@ -55,7 +66,7 @@ describe.skipIf(!foundryReady)('Azure AI Foundry — direct', () => {
     expect(result.usage.outputTokens).toBeGreaterThan(0);
   });
 
-  it('streamText streams chunks and completes', async () => {
+  it(`[${label}] streamText streams chunks and completes`, async () => {
     const result = streamText({
       model,
       messages: [
@@ -74,6 +85,57 @@ describe.skipIf(!foundryReady)('Azure AI Foundry — direct', () => {
     expect(fullText).toMatch(/1/);
     expect(fullText).toMatch(/2/);
     expect(fullText).toMatch(/3/);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// GPT-5.4-nano (openai adapter, auto-detected)
+// ---------------------------------------------------------------------------
+
+const foundryReady = Boolean((FOUNDRY_ENDPOINT || FOUNDRY_RESOURCE) && FOUNDRY_MODEL);
+
+describe.skipIf(!foundryReady)('Azure AI Foundry — GPT-5.4-nano', () => {
+  createModelTests('gpt-5.4-nano', () => {
+    const foundry = createAzureFoundry({
+      ...(FOUNDRY_RESOURCE
+        ? { resourceName: FOUNDRY_RESOURCE, projectId: FOUNDRY_PROJECT }
+        : { endpoint: FOUNDRY_ENDPOINT! }),
+      ...(FOUNDRY_API_KEY ? { apiKey: FOUNDRY_API_KEY } : {}),
+    });
+    return foundry(FOUNDRY_MODEL!);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Kimi-K2.5 (openai-legacy adapter, auto-detected)
+// ---------------------------------------------------------------------------
+
+const kimiReady = Boolean(KIMI_ENDPOINT && KIMI_MODEL);
+
+describe.skipIf(!kimiReady)('Azure AI Foundry — Kimi-K2.5', () => {
+  createModelTests('Kimi-K2.5', () => {
+    const foundry = createAzureFoundry({
+      endpoint: KIMI_ENDPOINT!,
+      ...(KIMI_API_KEY ? { apiKey: KIMI_API_KEY } : {}),
+    });
+    return foundry(KIMI_MODEL!);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Claude Sonnet 4.6 (anthropic adapter, auto-detected)
+// URL: /anthropic/v1/messages (set by AnthropicAdapter)
+// ---------------------------------------------------------------------------
+
+const claudeReady = Boolean(CLAUDE_ENDPOINT && CLAUDE_MODEL);
+
+describe.skipIf(!claudeReady)('Azure AI Foundry — Claude Sonnet 4.6', () => {
+  createModelTests('claude-sonnet-4-6', () => {
+    const foundry = createAzureFoundry({
+      endpoint: CLAUDE_ENDPOINT!,
+      ...(CLAUDE_API_KEY ? { apiKey: CLAUDE_API_KEY } : {}),
+    });
+    return foundry(CLAUDE_MODEL!);
   });
 });
 

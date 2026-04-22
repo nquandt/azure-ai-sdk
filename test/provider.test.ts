@@ -2,9 +2,18 @@
  * Unit tests for createAzureFoundry — no real Azure dependencies.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAzureFoundry } from '../src/index.js';
 import { fakeCredential, fakeFetch, chatResponse } from './helpers.js';
+
+// Isolate all unit tests from .env values loaded by vitest config
+beforeEach(() => {
+  vi.stubEnv('AZURE_FOUNDRY_RESOURCE', '');
+  vi.stubEnv('AZURE_FOUNDRY_PROJECT', '');
+  vi.stubEnv('AZURE_AI_FOUNDRY_ENDPOINT', '');
+  vi.stubEnv('AZURE_FOUNDRY_API_KEY', '');
+});
+afterEach(() => vi.unstubAllEnvs());
 
 describe('createAzureFoundry — provider construction', () => {
   it('throws when no endpoint is provided', () => {
@@ -126,6 +135,69 @@ describe('createAzureFoundry — URL routing', () => {
     expect(requests[0].body).toHaveProperty('model', 'DeepSeek-R1');
   });
 
+  it('resourceName alone constructs services.ai.azure.com/models URL', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      resourceName: 'my-resource',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('DeepSeek-R1').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/models/chat/completions');
+    expect(requests[0].body).toHaveProperty('model', 'DeepSeek-R1');
+  });
+
+  it('resourceName + projectId constructs services.ai.azure.com/api/projects URL without api-version by default', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      resourceName: 'my-resource',
+      projectId: 'my-project',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-5-nano').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/api/projects/my-project/chat/completions');
+    expect(requests[0].body).toHaveProperty('model', 'gpt-5-nano');
+  });
+
+  it('resourceName + projectId appends api-version when explicitly set', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      resourceName: 'my-resource',
+      projectId: 'my-project',
+      apiVersion: '2025-01-01-preview',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-5-nano').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/api/projects/my-project/chat/completions?api-version=2025-01-01-preview');
+    expect(requests[0].body).toHaveProperty('model', 'gpt-5-nano');
+  });
+
+  it('resourceName takes precedence over endpoint', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      resourceName: 'my-resource',
+      endpoint: 'https://should-be-ignored.cognitiveservices.azure.com',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('gpt-5-nano').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toContain('my-resource.services.ai.azure.com');
+  });
+
   it('encodes special characters in model/deployment name', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
@@ -141,8 +213,22 @@ describe('createAzureFoundry — URL routing', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Authentication scenarios
+//
+// Scenario 1: Foundry + Entra (az login / managed identity)
+//   credential → DefaultAzureCredential, no apiKey, no subscriptionKey
+//
+// Scenario 2: Foundry + API key (direct key, replaces Entra entirely)
+//   apiKey → used directly as Bearer token, Entra is skipped
+//
+// Scenario 3: APIM + Entra + subscription key
+//   credential → Entra JWT, subscriptionKey → Ocp-Apim-Subscription-Key + api-key
+// ---------------------------------------------------------------------------
+
 describe('createAzureFoundry — authentication', () => {
-  it('attaches Bearer token from credential', async () => {
+  // Scenario 1: Foundry + Entra
+  it('[Scenario 1] attaches Bearer token from credential', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
       endpoint: 'https://my-resource.cognitiveservices.azure.com',
@@ -154,9 +240,11 @@ describe('createAzureFoundry — authentication', () => {
     });
 
     expect(requests[0].headers['authorization']).toBe('Bearer my-secret-token');
+    expect(requests[0].headers['ocp-apim-subscription-key']).toBeUndefined();
+    expect(requests[0].headers['api-key']).toBeUndefined();
   });
 
-  it('merges custom headers with auth header', async () => {
+  it('[Scenario 1] merges custom headers with auth header', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
       endpoint: 'https://my-resource.cognitiveservices.azure.com',
@@ -172,28 +260,65 @@ describe('createAzureFoundry — authentication', () => {
     expect(requests[0].headers['x-custom-header']).toBe('custom-value');
   });
 
-  it('apiKey sends Ocp-Apim-Subscription-Key and api-key headers', async () => {
+  // Scenario 2: Foundry + API key (replaces Entra)
+  it('[Scenario 2] apiKey is used directly as Bearer token — no Entra call', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
-      endpoint: 'https://my-resource.cognitiveservices.azure.com',
-      credential: fakeCredential(),
-      apiKey: 'my-apim-key',
+      endpoint: 'https://my-resource.services.ai.azure.com/models',
+      apiKey: 'my-api-key',
       fetch,
     });
     await foundry('gpt-test').doGenerate({
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
+    expect(requests[0].headers['authorization']).toBe('Bearer my-api-key');
+    expect(requests[0].headers['ocp-apim-subscription-key']).toBeUndefined();
+    expect(requests[0].headers['api-key']).toBeUndefined();
+  });
+
+  it('[Scenario 2] explicit headers are merged when using apiKey', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.services.ai.azure.com/models',
+      apiKey: 'my-api-key',
+      headers: { 'x-custom': 'val' },
+      fetch,
+    });
+    await foundry('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].headers['authorization']).toBe('Bearer my-api-key');
+    expect(requests[0].headers['x-custom']).toBe('val');
+  });
+
+  // Scenario 3: APIM + Entra + subscription key
+  it('[Scenario 3] subscriptionKey sends Ocp-Apim-Subscription-Key and api-key alongside Entra token', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-org.azure-api.net',
+      endpointStyle: 'cognitive-services',
+      credential: fakeCredential('entra-token'),
+      subscriptionKey: 'my-apim-key',
+      fetch,
+    });
+    await foundry('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].headers['authorization']).toBe('Bearer entra-token');
     expect(requests[0].headers['ocp-apim-subscription-key']).toBe('my-apim-key');
     expect(requests[0].headers['api-key']).toBe('my-apim-key');
   });
 
-  it('explicit headers take precedence over apiKey', async () => {
+  it('[Scenario 3] explicit headers take precedence over subscriptionKey', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
-      endpoint: 'https://my-resource.cognitiveservices.azure.com',
+      endpoint: 'https://my-org.azure-api.net',
+      endpointStyle: 'cognitive-services',
       credential: fakeCredential(),
-      apiKey: 'default-key',
+      subscriptionKey: 'default-key',
       headers: { 'api-key': 'override-key' },
       fetch,
     });
@@ -204,7 +329,7 @@ describe('createAzureFoundry — authentication', () => {
     expect(requests[0].headers['api-key']).toBe('override-key');
   });
 
-  it('no apiKey header is sent when apiKey is not set', async () => {
+  it('no subscription headers are sent when neither apiKey nor subscriptionKey is set', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
       endpoint: 'https://my-resource.cognitiveservices.azure.com',
@@ -314,7 +439,6 @@ describe('createAzureFoundry — endpointStyle option', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    // Must not produce the doubled segment /openai/openai/
     expect(requests[0].url).not.toContain('/openai/openai/');
     expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
   });
@@ -336,8 +460,6 @@ describe('createAzureFoundry — endpointStyle option', () => {
   });
 
   it("endpointStyle 'cognitive-services' strips trailing /openai from cognitiveservices endpoint", async () => {
-    // Ensure the normalization also fires for auto-detected cognitive-services endpoints
-    // if the user appends /openai to the hostname-based endpoint.
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
       endpoint: 'https://my-resource.cognitiveservices.azure.com/openai',

@@ -18,7 +18,8 @@ import {
 // ---------------------------------------------------------------------------
 // Scope used to obtain tokens for Azure AI Foundry / Azure ML endpoints
 // ---------------------------------------------------------------------------
-const AZURE_AI_SCOPE = 'https://cognitiveservices.azure.com/.default';
+const COGNITIVE_SERVICES_SCOPE = 'https://cognitiveservices.azure.com/.default';
+const AI_FOUNDRY_SCOPE = 'https://ai.azure.com/.default';
 
 // ---------------------------------------------------------------------------
 // Provider settings
@@ -37,8 +38,33 @@ export interface AzureFoundryProviderSettings {
    *   → calls /chat/completions with model in the request body
    *
    * Can also be provided via the AZURE_AI_FOUNDRY_ENDPOINT environment variable.
+   *
+   * Alternatively, provide `resourceName` (and optionally `projectId`) to have
+   * the endpoint constructed automatically.
    */
   endpoint?: string;
+
+  /**
+   * Azure AI Foundry resource name (the subdomain portion of the hostname).
+   *
+   * When provided alongside `projectId`, constructs:
+   *   https://{resourceName}.services.ai.azure.com/api/projects/{projectId}
+   *
+   * When provided alone, constructs:
+   *   https://{resourceName}.services.ai.azure.com/models
+   *
+   * Takes precedence over `endpoint` when both are set.
+   * Can also be provided via the AZURE_FOUNDRY_RESOURCE environment variable.
+   */
+  resourceName?: string;
+
+  /**
+   * Azure AI Foundry project name.
+   * Used together with `resourceName` to construct the project-scoped endpoint:
+   *   https://{resourceName}.services.ai.azure.com/api/projects/{projectId}
+   * Can also be provided via the AZURE_FOUNDRY_PROJECT environment variable.
+   */
+  projectId?: string;
 
   /**
    * Controls how the chat completions URL is constructed.
@@ -89,8 +115,9 @@ export interface AzureFoundryProviderSettings {
   /**
    * OAuth2 scope to request when obtaining a bearer token.
    *
-   * Defaults to `'https://cognitiveservices.azure.com/.default'`, which is
-   * correct for direct Cognitive Services and AI Foundry endpoints.
+   * The default scope is inferred from the endpoint:
+   *   - `*.services.ai.azure.com` → `'https://ai.azure.com/.default'`
+   *   - all other endpoints       → `'https://cognitiveservices.azure.com/.default'`
    *
    * When routing through Azure API Management (APIM), set this to the scope
    * of the APIM's Entra app registration:
@@ -102,16 +129,37 @@ export interface AzureFoundryProviderSettings {
   scope?: string;
 
   /**
-   * Optional supplemental API key sent alongside the Entra bearer token.
+   * Direct API key for Azure AI Foundry endpoints.
    *
-   * **Entra identity is the primary and preferred authentication mechanism
-   * for this provider.** This option exists solely for APIM deployments that
-   * require a subscription key *in addition to* a valid Entra token — it is
-   * not a substitute for Entra auth and the bearer token is always sent.
+   * When set, this value is used directly as the Bearer token and **Entra
+   * identity is bypassed entirely**. This is convenient for local testing or
+   * environments where `az login` is not available.
    *
-   * When set, the value is forwarded as:
-   *   - `Ocp-Apim-Subscription-Key` (APIM subscription key header)
-   *   - `api-key` (Azure OpenAI / Cognitive Services compatibility header)
+   * For production workloads prefer leaving this unset and relying on
+   * `DefaultAzureCredential` (managed identity, workload identity, etc.).
+   *
+   * Can also be provided via the `AZURE_FOUNDRY_API_KEY` environment variable.
+   *
+   * @example
+   * ```ts
+   * // Quick local test without az login
+   * createAzureFoundry({
+   *   resourceName: 'my-resource',
+   *   projectId: 'my-project',
+   *   apiKey: process.env.AZURE_FOUNDRY_API_KEY,
+   * });
+   * ```
+   */
+  apiKey?: string;
+
+  /**
+   * APIM subscription key sent **alongside** the Entra bearer token.
+   *
+   * Use this when routing through Azure API Management that requires a
+   * subscription key in addition to a valid Entra JWT. The Entra bearer token
+   * is always obtained and sent; this key is forwarded as supplemental headers:
+   *   - `Ocp-Apim-Subscription-Key`
+   *   - `api-key`
    *
    * Values in `headers` take precedence if the same key appears in both.
    *
@@ -122,11 +170,11 @@ export interface AzureFoundryProviderSettings {
    *   endpoint: 'https://my-org.azure-api.net',
    *   endpointStyle: 'cognitive-services',
    *   scope: 'api://<apim-app-client-id>/.default',
-   *   apiKey: process.env.APIM_SUBSCRIPTION_KEY,
+   *   subscriptionKey: process.env.APIM_SUBSCRIPTION_KEY,
    * });
    * ```
    */
-  apiKey?: string;
+  subscriptionKey?: string;
 
   /**
    * Custom headers to include in every request.
@@ -213,43 +261,88 @@ export interface AzureFoundryProvider extends ProviderV2 {
 export function createAzureFoundry(
   options: AzureFoundryProviderSettings = {},
 ): AzureFoundryProvider {
-  const endpoint =
-    withoutTrailingSlash(
-      options.endpoint ??
-        (typeof process !== 'undefined'
-          ? process.env.AZURE_AI_FOUNDRY_ENDPOINT
-          : undefined),
-    ) ?? '';
+  // ---------------------------------------------------------------------------
+  // Endpoint resolution (priority order):
+  //   1. options.resourceName (+ options.projectId) — explicit code-level names
+  //   2. options.endpoint                           — explicit code-level URL
+  //   3. AZURE_FOUNDRY_RESOURCE env var (+ AZURE_FOUNDRY_PROJECT) — env-based names
+  //   4. AZURE_AI_FOUNDRY_ENDPOINT env var          — env-based full URL
+  //
+  // Explicit code-level options always win over env vars so that unit tests
+  // which pass a specific endpoint are never overridden by a .env file.
+  // ---------------------------------------------------------------------------
+  const resolvedEndpoint = (() => {
+    if (options.resourceName) {
+      return options.projectId
+        ? `https://${options.resourceName}.services.ai.azure.com/api/projects/${options.projectId}`
+        : `https://${options.resourceName}.services.ai.azure.com/models`;
+    }
+    if (options.endpoint !== undefined) return options.endpoint;
+    const envResource = typeof process !== 'undefined' ? process.env.AZURE_FOUNDRY_RESOURCE : undefined;
+    const envProject  = typeof process !== 'undefined' ? process.env.AZURE_FOUNDRY_PROJECT  : undefined;
+    if (envResource) {
+      return envProject
+        ? `https://${envResource}.services.ai.azure.com/api/projects/${envProject}`
+        : `https://${envResource}.services.ai.azure.com/models`;
+    }
+    return typeof process !== 'undefined' ? process.env.AZURE_AI_FOUNDRY_ENDPOINT : undefined;
+  })();
+
+  const endpoint = withoutTrailingSlash(resolvedEndpoint) ?? '';
 
   if (!endpoint) {
     throw new Error(
       '@nquandt/azure-ai-sdk: An Azure AI Foundry endpoint is required. ' +
-        'Provide it via the `endpoint` option or the AZURE_AI_FOUNDRY_ENDPOINT environment variable.',
+        'Provide it via `resourceName`/`projectId`, the `endpoint` option, or the AZURE_AI_FOUNDRY_ENDPOINT environment variable.',
     );
   }
 
-  const credential: TokenCredential =
-    options.credential ?? new DefaultAzureCredential();
+  // ---------------------------------------------------------------------------
+  // API key resolution:
+  //   - options.apiKey wins if provided
+  //   - If options.credential is explicitly set, the caller wants Entra auth;
+  //     do NOT fall back to AZURE_FOUNDRY_API_KEY env var.
+  //   - Otherwise, read AZURE_FOUNDRY_API_KEY from env as a convenience for
+  //     testing without az login.
+  // ---------------------------------------------------------------------------
+  const apiKey =
+    options.apiKey ??
+    (options.credential
+      ? undefined
+      : (typeof process !== 'undefined' ? process.env.AZURE_FOUNDRY_API_KEY : undefined));
 
-  const scope = options.scope ?? AZURE_AI_SCOPE;
-
-  // getToken is cached and auto-refreshed by the Azure SDK
-  const getToken = getBearerTokenProvider(credential, scope);
-
-  const getHeaders = async (): Promise<Record<string, string>> => {
-    const token = await getToken();
-    return {
-      Authorization: `Bearer ${token}`,
-      ...(options.apiKey
-        ? {
-            'Ocp-Apim-Subscription-Key': options.apiKey,
-            'api-key': options.apiKey,
-          }
-        : {}),
-      // Explicit headers always win — they are merged last
-      ...options.headers,
-    };
-  };
+  // When an explicit API key is provided, use it directly as the Bearer token
+  // and skip Entra identity entirely. This is useful for local testing without
+  // requiring `az login`. For production, prefer credential-based auth.
+  const getHeaders: () => Promise<Record<string, string>> = apiKey
+    ? async () => ({
+        Authorization: `Bearer ${apiKey}`,
+        ...options.headers,
+      })
+    : (() => {
+        const credential: TokenCredential =
+          options.credential ?? new DefaultAzureCredential();
+        // services.ai.azure.com (AI Foundry project/serverless) requires the
+        // https://ai.azure.com audience; all other endpoints (cognitiveservices,
+        // openai.azure.com, APIM, etc.) use the cognitiveservices audience.
+        const defaultScope = endpoint.includes('services.ai.azure.com')
+          ? AI_FOUNDRY_SCOPE
+          : COGNITIVE_SERVICES_SCOPE;
+        const scope = options.scope ?? defaultScope;
+        const getToken = getBearerTokenProvider(credential, scope);
+        return async () => ({
+          Authorization: `Bearer ${await getToken()}`,
+          // APIM subscription key — sent alongside the Entra token when set
+          ...(options.subscriptionKey
+            ? {
+                'Ocp-Apim-Subscription-Key': options.subscriptionKey,
+                'api-key': options.subscriptionKey,
+              }
+            : {}),
+          // Explicit headers always win — they are merged last
+          ...options.headers,
+        });
+      })();
 
   // Resolve the endpoint style.
   //
@@ -273,7 +366,7 @@ export function createAzureFoundry(
   const isCognitiveServices = resolvedStyle === 'cognitive-services';
   const apiVersion = options.apiVersion ?? '2024-10-21';
 
-  const buildUrl = (modelId: string): string => {
+  const buildUrl = (modelId: string, urlSuffix = '/chat/completions'): string => {
     if (isCognitiveServices) {
       // Strip a trailing `/openai` that callers may have included in the endpoint.
       // We always append `/openai/deployments/...` ourselves, so including it in
@@ -281,9 +374,23 @@ export function createAzureFoundry(
       //   https://my-org.azure-api.net/openai/openai/deployments/...  ← wrong
       //   https://my-org.azure-api.net/openai/deployments/...         ← correct
       const base = endpoint.replace(/\/openai\/?$/i, '');
+      // For non-standard paths (e.g. Anthropic's /anthropic/v1/messages)
+      // don't wrap in the OpenAI deployment path structure
+      if (urlSuffix !== '/chat/completions') {
+        return `${base}${urlSuffix}`;
+      }
       return `${base}/openai/deployments/${encodeURIComponent(modelId)}/chat/completions?api-version=${apiVersion}`;
     }
-    return `${endpoint}/chat/completions`;
+    // AI Foundry project-scoped endpoints (/api/projects/…).
+    // Only append api-version if the caller explicitly provides one — the
+    // service selects the latest version when the parameter is absent.
+    if (endpoint.includes('/api/projects/')) {
+      const projectApiVersion = options.apiVersion;
+      return projectApiVersion
+        ? `${endpoint}${urlSuffix}?api-version=${projectApiVersion}`
+        : `${endpoint}${urlSuffix}`;
+    }
+    return `${endpoint}${urlSuffix}`;
   };
 
   const createChatModel = (

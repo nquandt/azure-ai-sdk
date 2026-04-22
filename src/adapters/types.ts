@@ -93,4 +93,22 @@ export interface ChatAdapter<TResponseRaw = unknown, TChunkRaw = unknown> {
    * (e.g. completed tool calls, final usage, finish reason).
    */
   flush(): ParsedStreamChunk[];
+
+  /**
+   * The URL path suffix appended to the base endpoint when making requests.
+   * Defaults to `'/chat/completions'` when not set.
+   *
+   * Override for model families that use a different path, e.g. Anthropic:
+   *   `'/anthropic/v1/messages'`
+   */
+  readonly urlSuffix?: string;
+
+  /**
+   * Additional HTTP headers required by this adapter's API.
+   * Merged into every request alongside the auth headers.
+   *
+   * Example — Anthropic requires:
+   *   `{ 'anthropic-version': '2023-06-01' }`
+   */
+  readonly additionalHeaders?: Record<string, string>;
 }

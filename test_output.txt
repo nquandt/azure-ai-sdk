@@ -1,0 +1,516 @@
+
+> @nquandt/azure-ai-sdk@0.0.0-dev test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90mC:/Users/nquandt/repos/azure-ai-sdk[39m
+
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mo1 resolves to OpenAIAdapter[32m 3[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mo3-mini resolves to OpenAIAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mgpt-5-nano resolves to OpenAIAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mgpt-4o resolves to OpenAILegacyAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mgpt-4o-mini resolves to OpenAILegacyAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mgpt-4-turbo resolves to OpenAILegacyAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mgpt-35-turbo (Azure deployment style) resolves to OpenAILegacyAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mkimi-k2.5 resolves to OpenAILegacyAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22munknown model name defaults to OpenAIAdapter[32m 1[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mclaude-3-5-sonnet resolves to AnthropicAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mclaude-opus resolves to AnthropicAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — model ID heuristics[2m > [22mclaude-haiku resolves to AnthropicAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — explicit adapterType override[2m > [22mforces openai-legacy on an o-series model ID[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — explicit adapterType override[2m > [22mforces openai on a gpt-4o model ID[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mresolveAdapter — explicit adapterType override[2m > [22mexplicitly sets anthropic to AnthropicAdapter[32m 0[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mopenai adapter — request shape[2m > [22msends max_completion_tokens[32m 9[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mopenai adapter — request shape[2m > [22msuppresses temperature=0[32m 2[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mopenai-legacy adapter — request shape[2m > [22msends max_tokens instead of max_completion_tokens[32m 2[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mopenai-legacy adapter — request shape[2m > [22mforwards temperature=0 explicitly[32m 1[2mms[22m[39m
+ [32m✓[39m test/adapters.test.ts[2m > [22mopenai-legacy adapter — request shape[2m > [22mauto-selects openai-legacy for gpt-4o without explicit adapterType[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends messages in the request body[32m 14[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22mdoes not send temperature when it is 0 (SDK default)[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends temperature when explicitly set to non-zero[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends maxOutputTokens as max_completion_tokens[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends stop sequences[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends tools in regular mode[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends tool_choice:none[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22msends specific tool_choice by name[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22minjects JSON instruction message in object-json mode[32m 2[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — request shape[2m > [22mdoes not include undefined keys in the body[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mreturns the text content[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mmaps finish_reason stop → stop[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mmaps finish_reason length → length[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mmaps finish_reason content_filter → content-filter[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mmaps finish_reason tool_calls → tool-calls[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mreturns usage token counts[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mreturns tool calls from the response[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — response parsing[2m > [22mincludes request body in result[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — unsupported setting warnings[2m > [22mwarns on topK[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — unsupported setting warnings[2m > [22mwarns on presencePenalty[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — unsupported setting warnings[2m > [22mwarns on frequencyPenalty[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — error handling[2m > [22mthrows on 401 Unauthorized[32m 3[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — error handling[2m > [22mthrows on 429 Too Many Requests[32m 1[2mms[22m[39m
+ [32m✓[39m test/generate.test.ts[2m > [22mdoGenerate — error handling[2m > [22mthrows on 500 Internal Server Error[32m 1[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22msends stream:true in the request body[32m 21[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22memits text-delta parts for each content chunk[32m 4[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22memits a finish part with finishReason stop[32m 4[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22mmaps finish_reason length → length[32m 3[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22mmaps finish_reason content_filter → content-filter[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22memits usage in the finish part when provided in stream[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22mfinish usage defaults to undefined when not in stream[32m 3[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22mfull text can be reconstructed from deltas[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — basic text streaming[2m > [22memits stream-start as first part carrying warnings[32m 4[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — tool call streaming[2m > [22memits tool-input-start and tool-input-delta parts as arguments stream in[32m 3[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — tool call streaming[2m > [22memits a completed tool-call part in flush[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — tool call streaming[2m > [22maccumulates split argument deltas into a single tool-call[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — tool call streaming[2m > [22mhandles multiple concurrent tool calls[32m 3[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — tool call streaming[2m > [22mfinish reason is tool-calls when tools are called[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — error handling[2m > [22mthrows on 401 Unauthorized[32m 4[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — error handling[2m > [22mthrows on 429 Too Many Requests[32m 1[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — non-OpenAI model compatibility[2m > [22maccepts explicit null role on intermediate streaming chunks (Kimi-K2.5 / DeepSeek behaviour)[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — non-OpenAI model compatibility[2m > [22maccepts DeepSeek-style matched_stop extension field without error[32m 2[2mms[22m[39m
+ [32m✓[39m test/stream.test.ts[2m > [22mdoStream — non-OpenAI model compatibility[2m > [22maccepts reasoning_content field on streaming chunks without error[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mthrows when no endpoint is provided[32m 4[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mthrows when endpoint is an empty string[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mreturns a callable provider[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mprovider.chat and provider.languageModel are equivalent aliases[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mcalling provider as a function returns a model with the correct modelId[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mprovider is the azure-foundry.chat provider[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mtextEmbeddingModel throws NoSuchModelError[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mimageModel throws NoSuchModelError[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mstrips trailing slash from endpoint[32m 8[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint puts model in URL path[32m 12[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint appends api-version query param[32m 4[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version='[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint respects custom apiVersion[32m 3[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version=2025-01-01'[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mservices.ai.azure.com endpoint puts model in request body[32m 3[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mresourceName alone constructs services.ai.azure.com/models URL[32m 2[2mms[22m[39m
+[31m   → expected 'https://my-resource.services.ai.azure…' to be 'https://my-resource.services.ai.azure…' // Object.is equality[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mresourceName + projectId constructs services.ai.azure.com/api/projects URL[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mresourceName takes precedence over endpoint[32m 1[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mencodes special characters in model/deployment name[32m 3[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'my%20model%2Fv2'[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 1] attaches Bearer token from credential[32m 2[2mms[22m[39m
+[31m   → expected 'Bearer 1LXG6BKTHaaCo1gnawlIoFwDNXdREE…' to be 'Bearer my-secret-token' // Object.is equality[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 1] merges custom headers with auth header[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 2] apiKey is used directly as Bearer token — no Entra call[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 2] explicit headers are merged when using apiKey[32m 1[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 3] subscriptionKey sends Ocp-Apim-Subscription-Key and api-key alongside Entra token[32m 2[2mms[22m[39m
+[31m   → expected 'Bearer 1LXG6BKTHaaCo1gnawlIoFwDNXdREE…' to be 'Bearer entra-token' // Object.is equality[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 3] explicit headers take precedence over subscriptionKey[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mno subscription headers are sent when neither apiKey nor subscriptionKey is set[32m 1[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mthrows when no endpoint is provided[32m 2[2mms[22m[39m
+[31m   → expected [Function] to throw an error[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mthrows when endpoint is an empty string[32m 1[2mms[22m[39m
+[31m   → expected [Function] to throw an error[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mreturns a callable provider[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mprovider.chat and provider.languageModel are equivalent aliases[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mcalling provider as a function returns a model with the correct modelId[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mprovider is the azure-foundry.chat provider[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mtextEmbeddingModel throws NoSuchModelError[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mimageModel throws NoSuchModelError[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mstrips trailing slash from endpoint[32m 1[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint puts model in URL path[32m 1[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint appends api-version query param[32m 1[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version='[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint respects custom apiVersion[32m 1[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version=2025-01-01'[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mservices.ai.azure.com endpoint puts model in request body[32m 1[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mencodes special characters in model/deployment name[32m 1[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'my%20model%2Fv2'[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mattaches Bearer token from credential[32m 1[2mms[22m[39m
+[31m   → expected 'Bearer 1LXG6BKTHaaCo1gnawlIoFwDNXdREE…' to be 'Bearer my-secret-token' // Object.is equality[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mmerges custom headers with auth header[32m 1[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mapiKey sends Ocp-Apim-Subscription-Key and api-key headers[32m 1[2mms[22m[39m
+[31m   → expected undefined to be 'my-apim-key' // Object.is equality[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mexplicit headers take precedence over apiKey[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mno apiKey header is sent when apiKey is not set[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'cognitive-services' forces deployment-path URL for non-cognitiveservices hostname[32m 1[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'foundry' forces body-model URL for cognitiveservices hostname[32m 0[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'auto' still infers cognitiveservices from hostname[32m 1[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'auto' still infers foundry from non-cognitiveservices hostname[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'cognitive-services' respects custom apiVersion[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'cognitive-services' strips trailing /openai from endpoint[32m 0[2mms[22m[39m
+ [32m✓[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'cognitive-services' strips trailing /openai/ (with trailing slash) from endpoint[32m 0[2mms[22m[39m
+ [31m×[39m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'cognitive-services' strips trailing /openai from cognitiveservices endpoint[32m 1[2mms[22m[39m
+[31m   → expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+ [31m×[39m test/chat.test.ts[2m > [22mAzure AI Foundry — direct[2m > [22mgenerateText returns a non-empty response[32m 294[2mms[22m[39m
+[31m   → Missing required query parameter: api-version[39m
+[90mstderr[2m | test/chat.test.ts[2m > [22m[2mAzure AI Foundry — direct[2m > [22m[2mstreamText streams chunks and completes
+[22m[39mAPICallError [AI_APICallError]: Missing required query parameter: api-version
+    at [90mfile:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4m@ai-sdk[24m/provider-utils/dist/index.mjs:1016:14
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at postToApi [90m(file:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4m@ai-sdk[24m/provider-utils/dist/index.mjs:861:28[90m)[39m
+    at AzureFoundryChatLanguageModel.doStream (C:/Users/nquandt/repos/azure-ai-sdk/src/azure-foundry-chat-language-model.ts:146:7)
+    at fn [90m(file:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4mai[24m/dist/index.mjs:5020:27[90m)[39m
+    at [90mfile:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4mai[24m/dist/index.mjs:1587:22
+    at _retryWithExponentialBackoff [90m(file:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4mai[24m/dist/index.mjs:1738:12[90m)[39m
+    at streamStep [90m(file:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4mai[24m/dist/index.mjs:4976:15[90m)[39m
+    at fn [90m(file:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4mai[24m/dist/index.mjs:5317:9[90m)[39m
+    at [90mfile:///C:/Users/nquandt/repos/azure-ai-sdk/[39mnode_modules/[4mai[24m/dist/index.mjs:1587:22 {
+  cause: [90mundefined[39m,
+  url: [32m'https://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/completions'[39m,
+  requestBodyValues: {
+    model: [32m'gpt-5.4-nano'[39m,
+    messages: [ [36m[Object][39m, [36m[Object][39m ],
+    stream: [33mtrue[39m
+  },
+  statusCode: [33m400[39m,
+  responseHeaders: {
+    [32m'apim-request-id'[39m: [32m'a9ea1e34-2c5f-4d4d-ad96-6fb5fc91ab01'[39m,
+    [32m'content-length'[39m: [32m'89'[39m,
+    [32m'content-type'[39m: [32m'application/json'[39m,
+    date: [32m'Tue, 21 Apr 2026 21:21:41 GMT'[39m,
+    [32m'strict-transport-security'[39m: [32m'max-age=31536000; includeSubDomains; preload'[39m,
+    [32m'x-content-type-options'[39m: [32m'nosniff'[39m,
+    [32m'x-ms-region'[39m: [32m'East US 2'[39m
+  },
+  responseBody: [32m'{"error":{"code":"BadRequest","message":"Missing required query parameter: api-version"}}'[39m,
+  isRetryable: [33mfalse[39m,
+  data: {
+    error: {
+      code: [32m'BadRequest'[39m,
+      message: [32m'Missing required query parameter: api-version'[39m
+    }
+  },
+  [32mSymbol(vercel.ai.error)[39m: [33mtrue[39m,
+  [32mSymbol(vercel.ai.error.AI_APICallError)[39m: [33mtrue[39m
+}
+
+ [31m×[39m test/chat.test.ts[2m > [22mAzure AI Foundry — direct[2m > [22mstreamText streams chunks and completes[32m 171[2mms[22m[39m
+[31m   → expected '' to be truthy[39m
+ [2m[90m↓[39m[22m test/chat.test.ts[2m > [22mAzure AI Foundry — APIM gateway[2m > [22mgenerateText returns a non-empty response via APIM
+ [2m[90m↓[39m[22m test/chat.test.ts[2m > [22mAzure AI Foundry — APIM gateway[2m > [22mstreamText streams chunks and completes via APIM
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 19 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m test/chat.test.ts[2m > [22mAzure AI Foundry — direct[2m > [22mgenerateText returns a non-empty response
+[31m[1mAI_APICallError[22m: Missing required query parameter: api-version[39m
+[90m [2m❯[22m node_modules/@ai-sdk/provider-utils/src/response-handler.ts:[2m57:15[22m[39m
+[90m [2m❯[22m postToApi node_modules/@ai-sdk/provider-utils/src/post-to-api.ts:[2m118:27[22m[39m
+[36m [2m❯[22m AzureFoundryChatLanguageModel.doGenerate src/azure-foundry-chat-language-model.ts:[2m98:50[22m[39m
+    [90m 96|[39m     [35mconst[39m headers [33m=[39m [35mawait[39m [35mthis[39m[33m.[39mconfig[33m.[39m[34mheaders[39m()[33m;[39m
+    [90m 97|[39m
+    [90m 98|[39m     [35mconst[39m { value[33m:[39m response[33m,[39m responseHeaders } [33m=[39m [35mawait[39m [34mpostJsonToApi[39m({
+    [90m   |[39m                                                  [31m^[39m
+    [90m 99|[39m       url[33m:[39m [35mthis[39m[33m.[39mconfig[33m.[39m[34murl[39m([35mthis[39m[33m.[39mmodelId)[33m,[39m
+    [90m100|[39m       headers[33m:[39m [34mcombineHeaders[39m(headers[33m,[39m options[33m.[39mheaders[33m,[39m {
+[90m [2m❯[22m fn node_modules/ai/src/generate-text/generate-text.ts:[2m389:31[22m[39m
+[90m [2m❯[22m node_modules/ai/src/telemetry/record-span.ts:[2m18:21[22m[39m
+[90m [2m❯[22m _retryWithExponentialBackoff node_modules/ai/src/util/retry-with-exponential-backoff.ts:[2m96:11[22m[39m
+[90m [2m❯[22m fn node_modules/ai/src/generate-text/generate-text.ts:[2m345:33[22m[39m
+[90m [2m❯[22m node_modules/ai/src/telemetry/record-span.ts:[2m18:21[22m[39m
+[90m [2m❯[22m generateText node_modules/ai/src/generate-text/generate-text.ts:[2m281:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22m[39m
+[31m[1mSerialized Error:[22m[39m [90m{ url: 'https://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/completions', requestBodyValues: { model: 'gpt-5.4-nano', messages: [ { role: 'system', content: 'You are a concise assistant.' }, { role: 'user', content: [ { type: 'text', text: 'In one sentence, what is Azure OpenAI Service?' } ] } ] }, statusCode: 400, responseHeaders: { 'apim-request-id': '1c2daa8b-4103-4bac-89b5-555765fa1510', 'content-length': '89', 'content-type': 'application/json', date: 'Tue, 21 Apr 2026 21:21:41 GMT', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'x-content-type-options': 'nosniff', 'x-ms-region': 'East US 2' }, responseBody: '{"error":{"code":"BadRequest","message":"Missing required query parameter: api-version"}}', isRetryable: false, data: { error: { code: 'BadRequest', message: 'Missing required query parameter: api-version' } } }[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/chat.test.ts[2m > [22mAzure AI Foundry — direct[2m > [22mstreamText streams chunks and completes
+[31m[1mAssertionError[22m: expected '' to be truthy[39m
+
+[32m- Expected:[39m
+true
+
+[31m+ Received:[39m
+""
+
+[36m [2m❯[22m test/chat.test.ts:[2m79:22[22m[39m
+    [90m 77|[39m     }
+    [90m 78|[39m
+    [90m 79|[39m     [34mexpect[39m(fullText)[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m   |[39m                      [31m^[39m
+    [90m 80|[39m     [34mexpect[39m(fullText)[33m.[39m[34mtoMatch[39m([36m/1/[39m)[33m;[39m
+    [90m 81|[39m     [34mexpect[39m(fullText)[33m.[39m[34mtoMatch[39m([36m/2/[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint puts model in URL path
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+
+Expected: [32m"[7m/openai/deployments/gpt-4o[27m/chat/completions"[39m
+Received: [31m"[7mhttps://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2[27m/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m94:29[22m[39m
+    [90m 92|[39m     })[33m;[39m
+    [90m 93|[39m
+    [90m 94|[39m     expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat…
+    [90m   |[39m                             [31m^[39m
+    [90m 95|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39mbody)[33m.[39mnot[33m.[39m[34mtoHaveProperty[39m([32m'model'[39m)[33m;[39m
+    [90m 96|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint appends api-version query param
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version='[39m
+
+Expected: [32m"[7mapi-vers[27mion[7m=[27m"[39m
+Received: [31m"[7mhttps://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/complet[27mion[7ms[27m"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m109:29[22m[39m
+    [90m107|[39m     })[33m;[39m
+    [90m108|[39m
+    [90m109|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39m[34mtoContain[39m([32m'api-version='[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m110|[39m   })[33m;[39m
+    [90m111|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint respects custom apiVersion
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version=2025-01-01'[39m
+
+Expected: [32m"api-version=2025-01-01"[39m
+Received: [31m"https://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m124:29[22m[39m
+    [90m122|[39m     })[33m;[39m
+    [90m123|[39m
+    [90m124|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39m[34mtoContain[39m([32m'api-version=2025-01-01'[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m125|[39m   })[33m;[39m
+    [90m126|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mresourceName alone constructs services.ai.azure.com/models URL
+[31m[1mAssertionError[22m: expected 'https://my-resource.services.ai.azure…' to be 'https://my-resource.services.ai.azure…' // Object.is equality[39m
+
+Expected: [32m"https://my-resource.services.ai.azure.com/[7mmodels[27m/chat/completions"[39m
+Received: [31m"https://my-resource.services.ai.azure.com/[7mapi/projects/nicho-mghacx72-eastus2[27m/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m154:29[22m[39m
+    [90m152|[39m     })[33m;[39m
+    [90m153|[39m
+    [90m154|[39m     expect(requests[0].url).toBe('https://my-resource.services.ai.azur…
+    [90m   |[39m                             [31m^[39m
+    [90m155|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39mbody)[33m.[39m[34mtoHaveProperty[39m([32m'model'[39m[33m,[39m [32m'DeepSeek-R1'[39m)[33m;[39m
+    [90m156|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mencodes special characters in model/deployment name
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'my%20model%2Fv2'[39m
+
+Expected: [32m"my%20model%2Fv2"[39m
+Received: [31m"https://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m200:29[22m[39m
+    [90m198|[39m     })[33m;[39m
+    [90m199|[39m
+    [90m200|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39m[34mtoContain[39m([32m'my%20model%2Fv2'[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m201|[39m   })[33m;[39m
+    [90m202|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 1] attaches Bearer token from credential
+[31m[1mAssertionError[22m: expected 'Bearer 1LXG6BKTHaaCo1gnawlIoFwDNXdREE…' to be 'Bearer my-secret-token' // Object.is equality[39m
+
+Expected: [32m"Bearer [7mmy-secret-token[27m"[39m
+Received: [31m"Bearer [7m1LXG6BKTHaaCo1gnawlIoFwDNXdREEmG7HUnZoaFcDSvSg4i00ZnJQQJ99BJACHYHv6XJ3w3AAAAACOGwfAw[27m"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m230:50[22m[39m
+    [90m228|[39m     })[33m;[39m
+    [90m229|[39m
+    [90m230|[39m     expect(requests[0].headers['authorization']).toBe('Bearer my-secre…
+    [90m   |[39m                                                  [31m^[39m
+    [90m231|[39m     expect(requests[0].headers['ocp-apim-subscription-key']).toBeUndef…
+    [90m232|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39mheaders[[32m'api-key'[39m])[33m.[39m[34mtoBeUndefined[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22m[Scenario 3] subscriptionKey sends Ocp-Apim-Subscription-Key and api-key alongside Entra token
+[31m[1mAssertionError[22m: expected 'Bearer 1LXG6BKTHaaCo1gnawlIoFwDNXdREE…' to be 'Bearer entra-token' // Object.is equality[39m
+
+Expected: [32m"Bearer [7mentra-token[27m"[39m
+Received: [31m"Bearer [7m1LXG6BKTHaaCo1gnawlIoFwDNXdREEmG7HUnZoaFcDSvSg4i00ZnJQQJ99BJACHYHv6XJ3w3AAAAACOGwfAw[27m"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m298:50[22m[39m
+    [90m296|[39m     })[33m;[39m
+    [90m297|[39m
+    [90m298|[39m     expect(requests[0].headers['authorization']).toBe('Bearer entra-to…
+    [90m   |[39m                                                  [31m^[39m
+    [90m299|[39m     expect(requests[0].headers['ocp-apim-subscription-key']).toBe('my-…
+    [90m300|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39mheaders[[32m'api-key'[39m])[33m.[39m[34mtoBe[39m([32m'my-apim-key'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mthrows when no endpoint is provided
+[31m[1mAssertionError[22m: expected [Function] to throw an error[39m
+
+[32m- Expected:[39m
+null
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m test/provider.test.ts:[2m338:40[22m[39m
+    [90m336|[39m [34mdescribe[39m([32m'createAzureFoundry — provider construction'[39m[33m,[39m () [33m=>[39m {
+    [90m337|[39m   [34mit[39m([32m'throws when no endpoint is provided'[39m[33m,[39m () [33m=>[39m {
+    [90m338|[39m     [34mexpect[39m(() [33m=>[39m [34mcreateAzureFoundry[39m())[33m.[39m[34mtoThrow[39m([36m/endpoint is required/[39m)[33m;[39m
+    [90m   |[39m                                        [31m^[39m
+    [90m339|[39m   })[33m;[39m
+    [90m340|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — provider construction[2m > [22mthrows when endpoint is an empty string
+[31m[1mAssertionError[22m: expected [Function] to throw an error[39m
+
+[32m- Expected:[39m
+null
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m test/provider.test.ts:[2m342:56[22m[39m
+    [90m340|[39m
+    [90m341|[39m   [34mit[39m([32m'throws when endpoint is an empty string'[39m[33m,[39m () [33m=>[39m {
+    [90m342|[39m     expect(() => createAzureFoundry({ endpoint: '' })).toThrow(/endpoi…
+    [90m   |[39m                                                        [31m^[39m
+    [90m343|[39m   })[33m;[39m
+    [90m344|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint puts model in URL path
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+
+Expected: [32m"[7m/openai/deployments/gpt-4o[27m/chat/completions"[39m
+Received: [31m"[7mhttps://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2[27m/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m407:29[22m[39m
+    [90m405|[39m     })[33m;[39m
+    [90m406|[39m
+    [90m407|[39m     expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat…
+    [90m   |[39m                             [31m^[39m
+    [90m408|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39mbody)[33m.[39mnot[33m.[39m[34mtoHaveProperty[39m([32m'model'[39m)[33m;[39m
+    [90m409|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint appends api-version query param
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version='[39m
+
+Expected: [32m"[7mapi-vers[27mion[7m=[27m"[39m
+Received: [31m"[7mhttps://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/complet[27mion[7ms[27m"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m422:29[22m[39m
+    [90m420|[39m     })[33m;[39m
+    [90m421|[39m
+    [90m422|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39m[34mtoContain[39m([32m'api-version='[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m423|[39m   })[33m;[39m
+    [90m424|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mcognitiveservices endpoint respects custom apiVersion
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'api-version=2025-01-01'[39m
+
+Expected: [32m"api-version=2025-01-01"[39m
+Received: [31m"https://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m437:29[22m[39m
+    [90m435|[39m     })[33m;[39m
+    [90m436|[39m
+    [90m437|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39m[34mtoContain[39m([32m'api-version=2025-01-01'[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m438|[39m   })[33m;[39m
+    [90m439|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — URL routing[2m > [22mencodes special characters in model/deployment name
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain 'my%20model%2Fv2'[39m
+
+Expected: [32m"my%20model%2Fv2"[39m
+Received: [31m"https://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m467:29[22m[39m
+    [90m465|[39m     })[33m;[39m
+    [90m466|[39m
+    [90m467|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39m[34mtoContain[39m([32m'my%20model%2Fv2'[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m468|[39m   })[33m;[39m
+    [90m469|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mattaches Bearer token from credential
+[31m[1mAssertionError[22m: expected 'Bearer 1LXG6BKTHaaCo1gnawlIoFwDNXdREE…' to be 'Bearer my-secret-token' // Object.is equality[39m
+
+Expected: [32m"Bearer [7mmy-secret-token[27m"[39m
+Received: [31m"Bearer [7m1LXG6BKTHaaCo1gnawlIoFwDNXdREEmG7HUnZoaFcDSvSg4i00ZnJQQJ99BJACHYHv6XJ3w3AAAAACOGwfAw[27m"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m483:50[22m[39m
+    [90m481|[39m     })[33m;[39m
+    [90m482|[39m
+    [90m483|[39m     expect(requests[0].headers['authorization']).toBe('Bearer my-secre…
+    [90m   |[39m                                                  [31m^[39m
+    [90m484|[39m   })[33m;[39m
+    [90m485|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — authentication[2m > [22mapiKey sends Ocp-Apim-Subscription-Key and api-key headers
+[31m[1mAssertionError[22m: expected undefined to be 'my-apim-key' // Object.is equality[39m
+
+[32m- Expected:[39m
+"my-apim-key"
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m test/provider.test.ts:[2m514:62[22m[39m
+    [90m512|[39m     })[33m;[39m
+    [90m513|[39m
+    [90m514|[39m     expect(requests[0].headers['ocp-apim-subscription-key']).toBe('my-…
+    [90m   |[39m                                                              [31m^[39m
+    [90m515|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39mheaders[[32m'api-key'[39m])[33m.[39m[34mtoBe[39m([32m'my-apim-key'[39m)[33m;[39m
+    [90m516|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'auto' still infers cognitiveservices from hostname
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+
+Expected: [32m"[7m/openai/deployments/gpt-4o[27m/chat/completions"[39m
+Received: [31m"[7mhttps://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2[27m/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m597:29[22m[39m
+    [90m595|[39m     })[33m;[39m
+    [90m596|[39m
+    [90m597|[39m     expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat…
+    [90m   |[39m                             [31m^[39m
+    [90m598|[39m   })[33m;[39m
+    [90m599|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/19]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/provider.test.ts[2m > [22mcreateAzureFoundry — endpointStyle option[2m > [22mendpointStyle 'cognitive-services' strips trailing /openai from cognitiveservices endpoint
+[31m[1mAssertionError[22m: expected 'https://nicho-mghacx72-eastus2.servic…' to contain '/openai/deployments/gpt-4o/chat/compl…'[39m
+
+Expected: [32m"[7m/openai/deployments/gpt-4o[27m/chat/completions"[39m
+Received: [31m"[7mhttps://nicho-mghacx72-eastus2.services.ai.azure.com/api/projects/nicho-mghacx72-eastus2[27m/chat/completions"[39m
+
+[36m [2m❯[22m test/provider.test.ts:[2m680:29[22m[39m
+    [90m678|[39m
+    [90m679|[39m     [34mexpect[39m(requests[[34m0[39m][33m.[39murl)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'/openai/openai/'[39m)[33m;[39m
+    [90m680|[39m     expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat…
+    [90m   |[39m                             [31m^[39m
+    [90m681|[39m   })[33m;[39m
+    [90m682|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/19]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[31m19 failed[39m[22m[2m | [22m[1m[32m97 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (118)[39m
+[2m   Start at [22m 16:21:39
+[2m   Duration [22m 1.81s[2m (transform 610ms, setup 0ms, import 4.62s, tests 686ms, environment 1ms)[22m
+

@@ -72,7 +72,8 @@ The SDK infers the URL format from the endpoint hostname:
 | Endpoint hostname | URL pattern | Model sent in |
 |---|---|---|
 | `*.cognitiveservices.azure.com` | `/openai/deployments/{model}/chat/completions?api-version=...` | URL path |
-| `*.services.ai.azure.com` | `/chat/completions` | Request body |
+| `*.openai.azure.com` | `{endpoint}/chat/completions` | Request body |
+| `*.services.ai.azure.com` | `{endpoint}/chat/completions` | Request body |
 | **Anything else (APIM, custom)** | `/openai/deployments/{model}/chat/completions?api-version=...` | URL path |
 
 APIM hostnames fall into the "anything else" category and default to the deployment-path style. Make sure your APIM API is configured with a matching operation path (`/deployments/{deployment-id}/chat/completions`).
@@ -104,4 +105,12 @@ const foundry = createAzureFoundry({
 const model = foundry('my-chat-model', { adapterType: 'openai-legacy' });
 ```
 
-See the main README for the full list of adapter types.
+Adapter auto-detection patterns:
+
+| `adapterType` | Auto-detected model name patterns |
+|---|---|
+| `openai` | `o1`, `o3`, `gpt-5*`, `gpt-4.5*` |
+| `openai-legacy` | `gpt-4o*`, `gpt-4*`, `gpt-35*`, `gpt-3.5*`, `kimi*` |
+| `anthropic` | `claude*` |
+
+See the main README for the full list of options.

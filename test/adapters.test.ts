@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createAzureFoundry } from '../src/index.js';
-import { resolveAdapter, OpenAIAdapter, OpenAILegacyAdapter } from '../src/adapters/index.js';
+import { resolveAdapter, OpenAIAdapter, OpenAILegacyAdapter, AnthropicAdapter } from '../src/adapters/index.js';
 import { fakeCredential, fakeFetch, chatResponse } from './helpers.js';
 
 const ENDPOINT = 'https://my-resource.cognitiveservices.azure.com';
@@ -51,8 +51,28 @@ describe('resolveAdapter — model ID heuristics', () => {
     expect(resolveAdapter('gpt-35-turbo', undefined, () => 'id')).toBeInstanceOf(OpenAILegacyAdapter);
   });
 
+  it('kimi-k2.5 resolves to OpenAILegacyAdapter', () => {
+    expect(resolveAdapter('Kimi-K2.5', undefined, () => 'id')).toBeInstanceOf(OpenAILegacyAdapter);
+  });
+
   it('unknown model name defaults to OpenAIAdapter', () => {
     expect(resolveAdapter('some-custom-apim-deployment', undefined, () => 'id')).toBeInstanceOf(OpenAIAdapter);
+  });
+
+  it('claude-3-5-sonnet resolves to AnthropicAdapter', () => {
+    expect(resolveAdapter('claude-3-5-sonnet', undefined, () => 'id')).toBeInstanceOf(AnthropicAdapter);
+  });
+
+  it('claude-opus resolves to AnthropicAdapter', () => {
+    expect(resolveAdapter('claude-opus', undefined, () => 'id')).toBeInstanceOf(AnthropicAdapter);
+  });
+
+  it('claude-haiku resolves to AnthropicAdapter', () => {
+    expect(resolveAdapter('claude-haiku', undefined, () => 'id')).toBeInstanceOf(AnthropicAdapter);
+  });
+
+  it('claude-sonnet-4-6 resolves to AnthropicAdapter', () => {
+    expect(resolveAdapter('claude-sonnet-4-6', undefined, () => 'id')).toBeInstanceOf(AnthropicAdapter);
   });
 });
 
@@ -70,8 +90,8 @@ describe('resolveAdapter — explicit adapterType override', () => {
     expect(resolveAdapter('gpt-4o', 'openai', () => 'id')).toBeInstanceOf(OpenAIAdapter);
   });
 
-  it('throws for anthropic (not yet implemented)', () => {
-    expect(() => resolveAdapter('claude-3-5-sonnet', 'anthropic', () => 'id')).toThrow(/not yet implemented/);
+  it('explicitly sets anthropic to AnthropicAdapter', () => {
+    expect(resolveAdapter('gpt-4o', 'anthropic', () => 'id')).toBeInstanceOf(AnthropicAdapter);
   });
 });
 

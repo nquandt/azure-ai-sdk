@@ -2,9 +2,11 @@ import { generateId } from '@ai-sdk/provider-utils';
 import { AdapterType, ChatAdapter } from './types.js';
 import { OpenAIAdapter } from './openai-adapter.js';
 import { OpenAILegacyAdapter } from './openai-legacy-adapter.js';
+import { AnthropicAdapter } from './anthropic-adapter.js';
 
 export { OpenAIAdapter } from './openai-adapter.js';
 export { OpenAILegacyAdapter } from './openai-legacy-adapter.js';
+export { AnthropicAdapter } from './anthropic-adapter.js';
 export type { AdapterType, ChatAdapter } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -18,8 +20,9 @@ export type { AdapterType, ChatAdapter } from './types.js';
 //   openai       — o-series reasoning models and gpt-5+ family use
 //                  max_completion_tokens and reject temperature=0
 //   openai-legacy — gpt-4o, gpt-4, gpt-35-turbo use max_tokens
+//   anthropic    — claude-* models use the Anthropic Messages API format
 //
-// When new model families are added (Anthropic, Mistral, etc.) the heuristic
+// When new model families are added (Mistral, etc.) the heuristic
 // list grows here; no changes needed in the language model class itself.
 // ---------------------------------------------------------------------------
 
@@ -34,10 +37,19 @@ const OPENAI_LEGACY_PATTERNS = [
   /^gpt-4/i,         // gpt-4, gpt-4-turbo
   /^gpt-35/i,        // gpt-35-turbo (Azure deployment name style)
   /^gpt-3\.5/i,      // gpt-3.5-turbo
+  /^kimi/i,          // kimi-k2.5 (uses max_tokens, not max_completion_tokens)
+];
+
+const ANTHROPIC_PATTERNS = [
+  /^claude/i,        // claude-opus, claude-sonnet, claude-haiku, etc.
 ];
 
 function detectAdapterType(modelId: string): AdapterType {
   const id = modelId.toLowerCase();
+
+  for (const pattern of ANTHROPIC_PATTERNS) {
+    if (pattern.test(id)) return 'anthropic';
+  }
 
   for (const pattern of OPENAI_LEGACY_PATTERNS) {
     if (pattern.test(id)) return 'openai-legacy';
@@ -77,12 +89,7 @@ export function resolveAdapter(
     case 'openai-legacy':
       return new OpenAILegacyAdapter(idGenerator);
     case 'anthropic':
-      // Placeholder — AnthropicAdapter will be implemented when Anthropic
-      // support is added. Throw early with a clear message rather than
-      // silently falling back.
-      throw new Error(
-        `@nquandt/azure-ai-sdk: adapterType 'anthropic' is not yet implemented.`,
-      );
+      return new AnthropicAdapter(idGenerator);
     default: {
       // Exhaustiveness check — TypeScript will error here if AdapterType
       // gains a new member without a corresponding case above.

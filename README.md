@@ -2,7 +2,7 @@
 
 A [Vercel AI SDK](https://sdk.vercel.ai) custom provider for [Azure AI Foundry](https://ai.azure.com) that authenticates using **Azure Entra identity** — no API keys required.
 
-Works with any Azure-hosted chat model: GPT-4o, DeepSeek-R1, Llama, Cohere, Phi, and others.
+Works with any Azure-hosted chat model: GPT-4o, GPT-5, Claude (Anthropic), DeepSeek, Kimi, Llama, Phi, Cohere, and others.
 
 [![npm](https://img.shields.io/npm/v/@nquandt/azure-ai-sdk)](https://www.npmjs.com/package/@nquandt/azure-ai-sdk)
 [![JSR](https://jsr.io/badges/@nquandt/azure-ai-sdk)](https://jsr.io/@nquandt/azure-ai-sdk)
@@ -57,15 +57,18 @@ console.log(text);
 
 ## Endpoint formats
 
-Two endpoint styles are supported and detected automatically from the hostname:
+Three endpoint styles are supported and detected automatically from the hostname:
 
 | Endpoint format | URL called | Model location |
 |---|---|---|
 | `https://<resource>.cognitiveservices.azure.com` | `/openai/deployments/{model}/chat/completions?api-version=...` | URL path |
-| `https://<project>.services.ai.azure.com/models` | `/chat/completions` | Request body |
+| `https://<resource>.openai.azure.com/openai/v1` | `{endpoint}/chat/completions` | Request body |
+| `https://<resource>.services.ai.azure.com/models` | `{endpoint}/chat/completions` | Request body |
+
+You can also supply `resourceName` (and optionally `projectId`) to have the endpoint constructed automatically — see [Configuration options](#configuration-options).
 
 When routing through a gateway (e.g. APIM) whose hostname does not match
-either pattern, use the `endpointStyle` option to override detection. See
+any of the above, use the `endpointStyle` option to override detection. See
 [Using with APIM](#using-with-azure-api-management-apim) below.
 
 ---
@@ -112,9 +115,15 @@ AZURE_CLIENT_SECRET=<client-secret>
 
 ```ts
 createAzureFoundry({
-  // Required. Azure resource endpoint URL.
+  // Endpoint — one of the three forms below.
   // Can also be set via the AZURE_AI_FOUNDRY_ENDPOINT environment variable.
   endpoint: 'https://my-resource.cognitiveservices.azure.com',
+
+  // Alternatively, supply resource + project to have the URL built for you.
+  // Constructs: https://{resourceName}.services.ai.azure.com/api/projects/{projectId}
+  // Can also be set via AZURE_FOUNDRY_RESOURCE / AZURE_FOUNDRY_PROJECT env vars.
+  resourceName: 'my-resource',
+  projectId: 'my-project',
 
   // Optional. Controls URL construction. Values: 'auto' | 'cognitive-services' | 'foundry'.
   // Defaults to 'auto' — infers style from the hostname.
@@ -132,12 +141,16 @@ createAzureFoundry({
   // For APIM: set to 'api://<apim-app-client-id>/.default'.
   scope: 'https://cognitiveservices.azure.com/.default',
 
-  // Optional. Supplemental subscription key sent alongside the Entra bearer token.
-  // Only needed when your APIM policy additionally requires a subscription key.
-  // Entra auth is the primary mechanism — this is not a substitute for it.
-  apiKey: process.env.APIM_SUBSCRIPTION_KEY,
+  // Optional. Direct API key — used as the Bearer token, bypassing Entra entirely.
+  // Convenient for local testing. For production use DefaultAzureCredential instead.
+  // Can also be set via AZURE_FOUNDRY_API_KEY.
+  apiKey: process.env.AZURE_FOUNDRY_API_KEY,
 
-  // Optional. Extra headers sent with every request. Take precedence over apiKey.
+  // Optional. APIM subscription key sent *alongside* the Entra bearer token.
+  // Only needed when your APIM policy requires a subscription key in addition to a JWT.
+  subscriptionKey: process.env.APIM_SUBSCRIPTION_KEY,
+
+  // Optional. Extra headers sent with every request.
   headers: { 'x-custom-header': 'value' },
 });
 ```
@@ -234,16 +247,24 @@ const { text } = await generateText({
 
 ---
 
-## Environment variable
+## Environment variables
 
-You can omit the `endpoint` option and set it via the environment instead:
+All endpoint and authentication options can be set via environment variables:
 
 ```bash
+# Direct endpoint URL
 AZURE_AI_FOUNDRY_ENDPOINT=https://my-resource.cognitiveservices.azure.com
+
+# Or, resource + project name (constructs services.ai.azure.com URL automatically)
+AZURE_FOUNDRY_RESOURCE=my-resource
+AZURE_FOUNDRY_PROJECT=my-project
+
+# Optional API key (bypasses Entra auth — for testing only)
+AZURE_FOUNDRY_API_KEY=<key>
 ```
 
 ```ts
-// endpoint is read from AZURE_AI_FOUNDRY_ENDPOINT automatically
+// All options read from environment automatically
 const foundry = createAzureFoundry({});
 ```
 
@@ -296,7 +317,7 @@ Azure OpenAI / Foundry resource.
 
 ### 3. Subscription key (if required by your APIM policy)
 
-Entra bearer token authentication is the primary mechanism — `apiKey` is only
+Entra bearer token authentication is the primary mechanism — `subscriptionKey` is only
 needed when your APIM product policy additionally requires a subscription key
 alongside the token. Most well-configured APIM deployments validate the Entra
 JWT alone and do not require a subscription key at all.
@@ -308,11 +329,11 @@ const foundry = createAzureFoundry({
   endpoint: 'https://my-org.azure-api.net',
   endpointStyle: 'cognitive-services',
   scope: 'api://<apim-app-client-id>/.default',
-  apiKey: process.env.APIM_SUBSCRIPTION_KEY,  // supplement to Entra auth, not a replacement
+  subscriptionKey: process.env.APIM_SUBSCRIPTION_KEY,  // supplement to Entra auth, not a replacement
 });
 ```
 
-The `apiKey` value is sent as both `Ocp-Apim-Subscription-Key` (APIM) and
+The `subscriptionKey` value is sent as both `Ocp-Apim-Subscription-Key` (APIM) and
 `api-key` (Azure OpenAI / Cognitive Services compatibility) headers alongside
 the Entra bearer token. Values in `headers` take precedence if the same key
 appears in both.
@@ -328,7 +349,8 @@ appears in both.
       "options": {
         "endpoint": "https://my-org.azure-api.net",
         "endpointStyle": "cognitive-services",
-        "scope": "api://<apim-app-client-id>/.default"
+        "scope": "api://<apim-app-client-id>/.default",
+        "subscriptionKey": "<apim-subscription-key>"
       },
       "models": {
         "gpt-4o": {
@@ -349,12 +371,20 @@ Integration tests in `test/chat.test.ts` are skipped automatically unless the re
 
 ```bash
 cp .env.example .env
-# fill in AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_MODEL, then:
-az login
+# Fill in the values for the models you want to test, then:
+az login          # or set AZURE_FOUNDRY_API_KEY to skip Entra auth
 npm test
 ```
 
-The unit tests (`provider`, `generate`, `stream`) run entirely with in-memory mocks and require no Azure access.
+Three separate test suites exist — each is skipped independently if its env vars are absent:
+
+| Suite | Env vars required |
+|---|---|
+| GPT-5.4-nano | `AZURE_AI_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_MODEL` |
+| Kimi-K2.5 | `AZURE_FOUNDRY_KIMI_ENDPOINT`, `AZURE_FOUNDRY_KIMI_MODEL` |
+| Claude Sonnet 4.6 | `AZURE_FOUNDRY_CLAUDE_ENDPOINT`, `AZURE_FOUNDRY_CLAUDE_MODEL` |
+
+The unit tests (`provider`, `generate`, `stream`, `adapters`) run entirely with in-memory mocks and require no Azure access.
 
 ---
 
