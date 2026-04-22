@@ -33,17 +33,13 @@ export type { AzureFoundryChatModelId, AzureFoundryChatSettings } from './azure-
 export { AzureFoundryChatLanguageModel } from './azure-foundry-chat-language-model.js';
 
 // -- Azure Identity credentials ----------------------------------------------
-// Re-exported from @azure/identity so consumers don't need a direct dependency
-// just to pass a custom credential:
+// Import credential classes directly from '@azure/identity' when needed:
 //
-//   import { createAzureFoundry, ManagedIdentityCredential } from '@nquandt/azure-ai-sdk';
+//   import { ManagedIdentityCredential } from '@azure/identity';
 //   const foundry = createAzureFoundry({
 //     endpoint: '...',
 //     credential: new ManagedIdentityCredential('<client-id>'),
 //   });
 //
-export {
-  DefaultAzureCredential,
-  ManagedIdentityCredential,
-  WorkloadIdentityCredential,
-} from './azure-foundry-provider.js';
+// They are NOT re-exported here so that '@azure/identity' is not loaded at
+// module-import time when an apiKey is used instead of Entra credentials.

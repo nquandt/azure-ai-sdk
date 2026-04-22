@@ -1,12 +1,6 @@
 import { LanguageModelV2, NoSuchModelError, ProviderV2 } from '@ai-sdk/provider';
 import { FetchFunction, withoutTrailingSlash } from '@ai-sdk/provider-utils';
-import {
-  DefaultAzureCredential,
-  ManagedIdentityCredential,
-  TokenCredential,
-  WorkloadIdentityCredential,
-  getBearerTokenProvider,
-} from '@azure/identity';
+import type { TokenCredential } from '@azure/identity';
 import {
   AzureFoundryChatLanguageModel,
 } from './azure-foundry-chat-language-model.js';
@@ -338,20 +332,26 @@ export function createAzureFoundry(
         ...options.headers,
       })
     : (() => {
-        const credential: TokenCredential =
-          options.credential ?? new DefaultAzureCredential();
-        // services.ai.azure.com (AI Foundry project/serverless) requires the
-        // https://ai.azure.com audience; all other endpoints (cognitiveservices,
-        // openai.azure.com, APIM, etc.) use the cognitiveservices audience.
+        // Lazily import @azure/identity only when Entra auth is actually needed.
+        // This avoids loading native Azure SDK modules in environments (e.g. bun)
+        // where they may not be available, when an apiKey is being used instead.
+        let getTokenFn: (() => Promise<string>) | undefined;
         const defaultScope = endpoint.includes('services.ai.azure.com')
           ? AI_FOUNDRY_SCOPE
           : COGNITIVE_SERVICES_SCOPE;
         const scope = options.scope ?? defaultScope;
-        const credentialType = options.credential ? options.credential.constructor?.name ?? 'custom' : 'DefaultAzureCredential';
-        const getToken = getBearerTokenProvider(credential, scope);
+        const credentialType = options.credential
+          ? options.credential.constructor?.name ?? 'custom'
+          : 'DefaultAzureCredential';
         return async () => {
+          if (!getTokenFn) {
+            const { DefaultAzureCredential, getBearerTokenProvider } = await import('@azure/identity');
+            const credential: TokenCredential =
+              options.credential ?? new DefaultAzureCredential();
+            getTokenFn = getBearerTokenProvider(credential, scope);
+          }
           try {
-            const token = await getToken();
+            const token = await getTokenFn();
             return {
               Authorization: `Bearer ${token}`,
               // APIM subscription key — sent alongside the Entra token when set
@@ -452,12 +452,5 @@ export function createAzureFoundry(
   return provider as unknown as AzureFoundryProvider;
 }
 
-// ---------------------------------------------------------------------------
-// Convenience exports for well-known credential types
-// ---------------------------------------------------------------------------
-
-export {
-  DefaultAzureCredential,
-  ManagedIdentityCredential,
-  WorkloadIdentityCredential,
-};
+// Credential classes are no longer re-exported from this module.
+// Import them directly from '@azure/identity' when needed.
