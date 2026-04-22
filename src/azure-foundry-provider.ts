@@ -244,6 +244,15 @@ export interface AzureFoundryProvider extends ProviderV3 {
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
   ): LanguageModelV3;
+
+  /**
+   * Same as {@link chat} — alias matching `@ai-sdk/openai-compatible` / OpenCode
+   * conventions (`chatModel`).
+   */
+  chatModel?(
+    modelId: AzureFoundryChatModelId,
+    settings?: AzureFoundryChatSettings,
+  ): LanguageModelV3;
 }
 
 // ---------------------------------------------------------------------------
@@ -498,12 +507,17 @@ export function createAzureFoundry(
     return createChatModel(modelId, settings);
   };
 
+  provider.specificationVersion = 'v3';
+
   provider.languageModel = createChatModel;
   provider.chat = createChatModel;
+  provider.chatModel = createChatModel;
 
-  provider.textEmbeddingModel = (modelId: string) => {
+  const noEmbeddings = (modelId: string) => {
     throw new NoSuchModelError({ modelId, modelType: 'embeddingModel' });
   };
+  provider.embeddingModel = noEmbeddings;
+  provider.textEmbeddingModel = noEmbeddings;
 
   provider.imageModel = (modelId: string) => {
     throw new NoSuchModelError({ modelId, modelType: 'imageModel' });

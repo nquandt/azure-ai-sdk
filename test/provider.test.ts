@@ -29,14 +29,22 @@ describe('createAzureFoundry — provider construction', () => {
     expect(typeof foundry).toBe('function');
   });
 
-  it('provider.chat and provider.languageModel are equivalent aliases', () => {
+  it('provider.chat, chatModel, and provider.languageModel are equivalent aliases', () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({ endpoint: 'https://test.cognitiveservices.azure.com', credential: fakeCredential(), fetch });
 
     const a = foundry.chat('gpt-test');
     const b = foundry.languageModel('gpt-test');
+    const c = foundry.chatModel!('gpt-test');
+    expect(foundry.specificationVersion).toBe('v3');
     expect(a.modelId).toBe(b.modelId);
+    expect(a.modelId).toBe(c.modelId);
     expect(requests).toHaveLength(0); // no call until doGenerate/doStream
+  });
+
+  it('embeddingModel throws NoSuchModelError', () => {
+    const foundry = createAzureFoundry({ endpoint: 'https://test.cognitiveservices.azure.com', credential: fakeCredential() });
+    expect(() => foundry.embeddingModel('ada')).toThrow();
   });
 
   it('calling provider as a function returns a model with the correct modelId', () => {

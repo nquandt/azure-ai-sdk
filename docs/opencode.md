@@ -18,6 +18,8 @@ For remote or headless environments, any credential supported by `DefaultAzureCr
 
 ### 2. Create `opencode.json` in your project
 
+This repository ships `opencode.example.json` as a template. Copy it to `opencode.json` (that filename is gitignored here so you can keep keys or `az login` locally without committing secrets).
+
 Add the following to `opencode.json` at the root of your project. Use either a full endpoint URL **or** supply `resourceName` + `projectId` and let the SDK construct the URL for you:
 
 **Option A — resource + project (recommended)**
