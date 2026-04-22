@@ -47,11 +47,10 @@ export interface AzureFoundryProviderSettings {
   /**
    * Azure AI Foundry resource name (the subdomain portion of the hostname).
    *
-   * When provided alongside `projectId`, constructs:
-   *   https://{resourceName}.services.ai.azure.com/api/projects/{projectId}
+   * Constructs: https://{resourceName}.services.ai.azure.com/models
    *
-   * When provided alone, constructs:
-   *   https://{resourceName}.services.ai.azure.com/models
+   * `projectId` may be provided alongside this for configuration purposes but
+   * does not change the URL — the `/models` endpoint serves all deployed models.
    *
    * Takes precedence over `endpoint` when both are set.
    * Can also be provided via the AZURE_FOUNDRY_RESOURCE environment variable.
@@ -60,8 +59,9 @@ export interface AzureFoundryProviderSettings {
 
   /**
    * Azure AI Foundry project name.
-   * Used together with `resourceName` to construct the project-scoped endpoint:
-   *   https://{resourceName}.services.ai.azure.com/api/projects/{projectId}
+   * Accepted as a configuration convenience but does not affect the URL —
+   * the provider always uses the resource-level `/models` inference endpoint,
+   * which works for all deployed models regardless of project scoping.
    * Can also be provided via the AZURE_FOUNDRY_PROJECT environment variable.
    */
   projectId?: string;
@@ -290,17 +290,14 @@ export function createAzureFoundry(
   // ---------------------------------------------------------------------------
   const resolvedEndpoint = (() => {
     if (options.resourceName) {
-      return options.projectId
-        ? `https://${options.resourceName}.services.ai.azure.com/api/projects/${options.projectId}`
-        : `https://${options.resourceName}.services.ai.azure.com/models`;
+      // projectId is accepted as a config convenience but does not change the URL.
+      // The /models endpoint is the known-working inference surface for all models.
+      return `https://${options.resourceName}.services.ai.azure.com/models`;
     }
     if (options.endpoint !== undefined) return options.endpoint;
     const envResource = typeof process !== 'undefined' ? process.env.AZURE_FOUNDRY_RESOURCE : undefined;
-    const envProject  = typeof process !== 'undefined' ? process.env.AZURE_FOUNDRY_PROJECT  : undefined;
     if (envResource) {
-      return envProject
-        ? `https://${envResource}.services.ai.azure.com/api/projects/${envProject}`
-        : `https://${envResource}.services.ai.azure.com/models`;
+      return `https://${envResource}.services.ai.azure.com/models`;
     }
     return typeof process !== 'undefined' ? process.env.AZURE_AI_FOUNDRY_ENDPOINT : undefined;
   })();
@@ -396,12 +393,7 @@ export function createAzureFoundry(
   })();
 
   const isCognitiveServices = resolvedStyle === 'cognitive-services';
-  // cognitiveservices.azure.com (Azure OpenAI) uses the OpenAI GA api-version.
-  // services.ai.azure.com/api/projects/ (AI Foundry project-scoped) uses the
-  // AI Foundry inference api-version — 2024-10-21 is NOT supported there.
-  const isProjectScoped = endpoint.includes('/api/projects/');
-  const defaultApiVersion = isProjectScoped ? 'v1' : '2024-10-21';
-  const apiVersion = options.apiVersion ?? defaultApiVersion;
+  const apiVersion = options.apiVersion ?? '2024-10-21';
 
   const buildUrl = (modelId: string, urlSuffix = '/chat/completions'): string => {
     if (isCognitiveServices) {
@@ -417,11 +409,6 @@ export function createAzureFoundry(
         return `${base}${urlSuffix}`;
       }
       return `${base}/openai/deployments/${encodeURIComponent(modelId)}/chat/completions?api-version=${apiVersion}`;
-    }
-    // AI Foundry project-scoped endpoints (/api/projects/…).
-    // api-version is required by the service; default to the resolved apiVersion.
-    if (endpoint.includes('/api/projects/')) {
-      return `${endpoint}${urlSuffix}?api-version=${apiVersion}`;
     }
     return `${endpoint}${urlSuffix}`;
   };

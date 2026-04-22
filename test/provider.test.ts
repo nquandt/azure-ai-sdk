@@ -150,7 +150,7 @@ describe('createAzureFoundry — URL routing', () => {
     expect(requests[0].body).toHaveProperty('model', 'DeepSeek-R1');
   });
 
-  it('resourceName + projectId constructs services.ai.azure.com/api/projects URL with default api-version', async () => {
+  it('resourceName + projectId constructs /models URL (projectId is config-only, not a URL segment)', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     const foundry = createAzureFoundry({
       resourceName: 'my-resource',
@@ -162,24 +162,7 @@ describe('createAzureFoundry — URL routing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/api/projects/my-project/chat/completions?api-version=2025-01-01-preview');
-    expect(requests[0].body).toHaveProperty('model', 'gpt-5-nano');
-  });
-
-  it('resourceName + projectId appends api-version when explicitly set', async () => {
-    const { fetch, requests } = fakeFetch(chatResponse('hi'));
-    const foundry = createAzureFoundry({
-      resourceName: 'my-resource',
-      projectId: 'my-project',
-      apiVersion: '2025-01-01-preview',
-      credential: fakeCredential(),
-      fetch,
-    });
-    await foundry('gpt-5-nano').doGenerate({
-      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
-    });
-
-    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/api/projects/my-project/chat/completions?api-version=2025-01-01-preview');
+    expect(requests[0].url).toBe('https://my-resource.services.ai.azure.com/models/chat/completions');
     expect(requests[0].body).toHaveProperty('model', 'gpt-5-nano');
   });
 
