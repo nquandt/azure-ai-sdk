@@ -164,6 +164,32 @@ When the deployment name in your project doesn’t match the underlying model fa
 
 ---
 
+## Troubleshooting
+
+### `ProviderInitError` on Claude (Sonnet, etc.)
+
+This SDK is **not** the same npm package as OpenCode’s built-in Anthropic integration (`@ai-sdk/anthropic`). If your **global** config (`~/.config/opencode/opencode.json`) defines a separate provider for Azure Anthropic (for example `azure-anthropic` with `"npm": "@ai-sdk/anthropic"` and `baseURL` ending in `/anthropic/v1`) **and** you list the **same model key** on both that provider and `azure-foundry` (e.g. `claude-sonnet-4-6`), OpenCode may resolve the **short** model name to the **wrong** provider. The Anthropic SDK factory can then throw **ProviderInitError** during init.
+
+**Fix (pick one):**
+
+1. **Disable the extra Anthropic provider** while using this SDK, for example:
+
+   ```json
+   "disabled_providers": ["azure-anthropic"]
+   ```
+
+2. **Use different model keys** per provider (e.g. `foundry-claude-sonnet-4-6` only under `azure-foundry`).
+
+3. **Always choose the full model id** in OpenCode: `azure-foundry/claude-sonnet-4-6`, not the bare deployment name.
+
+4. Set **`small_model`** to a distinct, unambiguous id on the same provider so background tasks do not pull in another provider’s Claude entry, for example:
+
+   ```json
+   "small_model": "azure-foundry/gpt-5.4-nano"
+   ```
+
+---
+
 ## Behind an APIM gateway
 
 See [apim-integration.md](./apim-integration.md) for a full walkthrough of using this SDK with an Azure API Management gateway, including custom scopes and header forwarding.

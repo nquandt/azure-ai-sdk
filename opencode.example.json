@@ -17,5 +17,6 @@
       }
     }
   },
-  "model": "azure-foundry/gpt-5.4-nano"
+  "model": "azure-foundry/gpt-5.4-nano",
+  "small_model": "azure-foundry/gpt-5.4-nano"
 }
