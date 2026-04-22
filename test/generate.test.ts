@@ -174,7 +174,7 @@ describe('doGenerate — response parsing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.finishReason).toBe('stop');
+    expect(result.finishReason).toMatchObject({ unified: 'stop' });
   });
 
   it('maps finish_reason length → length', async () => {
@@ -183,7 +183,7 @@ describe('doGenerate — response parsing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.finishReason).toBe('length');
+    expect(result.finishReason).toMatchObject({ unified: 'length' });
   });
 
   it('maps finish_reason content_filter → content-filter', async () => {
@@ -192,7 +192,7 @@ describe('doGenerate — response parsing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.finishReason).toBe('content-filter');
+    expect(result.finishReason).toMatchObject({ unified: 'content-filter' });
   });
 
   it('maps finish_reason tool_calls → tool-calls', async () => {
@@ -204,7 +204,7 @@ describe('doGenerate — response parsing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.finishReason).toBe('tool-calls');
+    expect(result.finishReason).toMatchObject({ unified: 'tool-calls' });
   });
 
   it('returns usage token counts', async () => {
@@ -213,7 +213,10 @@ describe('doGenerate — response parsing', () => {
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
     });
 
-    expect(result.usage).toEqual({ inputTokens: 15, outputTokens: 25, totalTokens: 40 });
+    expect(result.usage).toEqual({
+      inputTokens: { total: 15, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+      outputTokens: { total: 25, text: undefined, reasoning: undefined },
+    });
   });
 
   it('returns tool calls from the response', async () => {
@@ -256,7 +259,7 @@ describe('doGenerate — unsupported setting warnings', () => {
       topK: 5,
     });
 
-    expect(result.warnings).toContainEqual({ type: 'unsupported-setting', setting: 'topK' });
+    expect(result.warnings).toContainEqual({ type: 'unsupported', feature: 'topK' });
   });
 
   it('warns on presencePenalty', async () => {
@@ -266,7 +269,7 @@ describe('doGenerate — unsupported setting warnings', () => {
       presencePenalty: 0.5,
     });
 
-    expect(result.warnings).toContainEqual({ type: 'unsupported-setting', setting: 'presencePenalty' });
+    expect(result.warnings).toContainEqual({ type: 'unsupported', feature: 'presencePenalty' });
   });
 
   it('warns on frequencyPenalty', async () => {
@@ -276,7 +279,7 @@ describe('doGenerate — unsupported setting warnings', () => {
       frequencyPenalty: 0.5,
     });
 
-    expect(result.warnings).toContainEqual({ type: 'unsupported-setting', setting: 'frequencyPenalty' });
+    expect(result.warnings).toContainEqual({ type: 'unsupported', feature: 'frequencyPenalty' });
   });
 });
 

@@ -1,8 +1,8 @@
 import {
-  LanguageModelV2CallOptions,
-  LanguageModelV2CallWarning,
-  LanguageModelV2Content,
-  LanguageModelV2FinishReason,
+  LanguageModelV3CallOptions,
+  LanguageModelV3Content,
+  LanguageModelV3FinishReason,
+  SharedV3Warning,
 } from '@ai-sdk/provider';
 import { ParseResult } from '@ai-sdk/provider-utils';
 import { z } from 'zod';
@@ -18,12 +18,11 @@ export type AdapterType = 'openai' | 'openai-legacy' | 'anthropic';
 // ---------------------------------------------------------------------------
 
 export type ParsedResponse = {
-  content: LanguageModelV2Content[];
-  finishReason: LanguageModelV2FinishReason;
+  content: LanguageModelV3Content[];
+  finishReason: LanguageModelV3FinishReason;
   usage: {
     inputTokens: number | undefined;
     outputTokens: number | undefined;
-    totalTokens: number | undefined;
   };
 };
 
@@ -35,7 +34,7 @@ export type ParsedStreamChunk =
   | { type: 'tool-input-delta'; id: string; delta: string }
   | { type: 'tool-input-end'; id: string }
   | { type: 'tool-call'; toolCallId: string; toolName: string; input: string }
-  | { type: 'finish'; finishReason: LanguageModelV2FinishReason; usage: { inputTokens: number | undefined; outputTokens: number | undefined } }
+  | { type: 'finish'; finishReason: LanguageModelV3FinishReason; usage: { inputTokens: number | undefined; outputTokens: number | undefined } }
   | { type: 'error'; error: unknown };
 
 // ---------------------------------------------------------------------------
@@ -44,7 +43,7 @@ export type ParsedStreamChunk =
 
 /**
  * A ChatAdapter owns the wire-format for a specific model family.
- * It translates between the AI SDK's LanguageModelV2 abstractions and the
+ * It translates between the AI SDK's LanguageModelV3 abstractions and the
  * raw HTTP request/response shapes expected by that family's API.
  *
  * Implementing a new adapter (e.g. Anthropic, Mistral, Cohere) requires only
@@ -55,12 +54,12 @@ export interface ChatAdapter<TResponseRaw = unknown, TChunkRaw = unknown> {
    * Build the JSON request body and surface any unsupported-setting warnings.
    */
   buildRequest(
-    options: LanguageModelV2CallOptions,
+    options: LanguageModelV3CallOptions,
     modelId: string,
     modelInBody: boolean,
   ): {
     body: Record<string, unknown>;
-    warnings: LanguageModelV2CallWarning[];
+    warnings: SharedV3Warning[];
   };
 
   /**

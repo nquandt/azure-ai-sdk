@@ -1,8 +1,8 @@
 import {
-  LanguageModelV2CallOptions,
-  LanguageModelV2CallWarning,
-  LanguageModelV2Content,
-  LanguageModelV2FinishReason,
+  LanguageModelV3CallOptions,
+  LanguageModelV3Content,
+  LanguageModelV3FinishReason,
+  SharedV3Warning,
 } from '@ai-sdk/provider';
 import { ParseResult } from '@ai-sdk/provider-utils';
 import { z } from 'zod';
@@ -144,18 +144,22 @@ type AnthropicChunk = z.infer<typeof anthropicChunkSchema>;
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function mapFinishReason(reason: string | null | undefined): LanguageModelV2FinishReason {
-  switch (reason) {
-    case 'end_turn': return 'stop';
-    case 'max_tokens': return 'length';
-    case 'tool_use': return 'tool-calls';
-    case 'stop_sequence': return 'stop';
-    default: return 'other';
-  }
+function mapFinishReason(reason: string | null | undefined): LanguageModelV3FinishReason {
+  const raw = reason ?? undefined;
+  const unified = ((): LanguageModelV3FinishReason['unified'] => {
+    switch (reason) {
+      case 'end_turn': return 'stop';
+      case 'max_tokens': return 'length';
+      case 'tool_use': return 'tool-calls';
+      case 'stop_sequence': return 'stop';
+      default: return 'other';
+    }
+  })();
+  return { unified, raw };
 }
 
 function convertToAnthropicMessages(
-  prompt: LanguageModelV2CallOptions['prompt'],
+  prompt: LanguageModelV3CallOptions['prompt'],
 ): { messages: ChatMessage[]; system: string | undefined } {
   const messages: ChatMessage[] = [];
   let systemPrompt: string | undefined;
@@ -231,8 +235,7 @@ function convertToAnthropicMessages(
 
       case 'tool': {
         for (const part of message.content) {
-          // Convert tool result to user message with tool_result format
-          // Anthropic expects: { role: 'user', content: [{ type: 'tool_result', tool_use_id: '...', content: '...' }] }
+          if (part.type !== 'tool-result') continue;
           const content: string = toolResultToString(part.output as unknown as { type: string; value?: unknown });
           messages.push({
             role: 'user',
@@ -267,16 +270,16 @@ function toolResultToString(output: { type: string; value?: unknown }): string {
   return JSON.stringify(output);
 }
 
-function buildTools(options: LanguageModelV2CallOptions): {
+function buildTools(options: LanguageModelV3CallOptions): {
   tools: unknown;
-  warnings: LanguageModelV2CallWarning[];
+  warnings: SharedV3Warning[];
 } {
-  const warnings: LanguageModelV2CallWarning[] = [];
+  const warnings: SharedV3Warning[] = [];
   let tools: unknown;
 
-  if (options.topK != null) warnings.push({ type: 'unsupported-setting', setting: 'topK' });
-  if (options.presencePenalty != null) warnings.push({ type: 'unsupported-setting', setting: 'presencePenalty' });
-  if (options.frequencyPenalty != null) warnings.push({ type: 'unsupported-setting', setting: 'frequencyPenalty' });
+  if (options.topK != null) warnings.push({ type: 'unsupported', feature: 'topK' });
+  if (options.presencePenalty != null) warnings.push({ type: 'unsupported', feature: 'presencePenalty' });
+  if (options.frequencyPenalty != null) warnings.push({ type: 'unsupported', feature: 'frequencyPenalty' });
 
   if (options.tools && options.tools.length > 0) {
     tools = options.tools
@@ -304,7 +307,7 @@ export class AnthropicAdapter implements ChatAdapter<AnthropicResponse, Anthropi
 
   // Required by the Anthropic API
   readonly additionalHeaders = { 'anthropic-version': '2023-06-01' };
-  private finishReason: LanguageModelV2FinishReason = 'other';
+  private finishReason: LanguageModelV3FinishReason = { unified: 'other', raw: undefined };
   private inputTokens: number | undefined;
   private outputTokens: number | undefined;
   private readonly toolCallAccumulators = new Map<
@@ -319,10 +322,10 @@ export class AnthropicAdapter implements ChatAdapter<AnthropicResponse, Anthropi
   }
 
   buildRequest(
-    options: LanguageModelV2CallOptions,
+    options: LanguageModelV3CallOptions,
     modelId: string,
     modelInBody: boolean,
-  ): { body: Record<string, unknown>; warnings: LanguageModelV2CallWarning[] } {
+  ): { body: Record<string, unknown>; warnings: SharedV3Warning[] } {
     const { tools, warnings } = buildTools(options);
     const { messages, system } = convertToAnthropicMessages(options.prompt);
 
@@ -348,7 +351,7 @@ export class AnthropicAdapter implements ChatAdapter<AnthropicResponse, Anthropi
   }
 
   parseResponse(raw: AnthropicResponse): ParsedResponse {
-    const content: LanguageModelV2Content[] = [];
+    const content: LanguageModelV3Content[] = [];
 
     for (const block of raw.content) {
       if (block.type === 'text') {
@@ -369,9 +372,6 @@ export class AnthropicAdapter implements ChatAdapter<AnthropicResponse, Anthropi
       usage: {
         inputTokens: raw.usage?.input_tokens ?? undefined,
         outputTokens: raw.usage?.output_tokens ?? undefined,
-        totalTokens: raw.usage?.input_tokens && raw.usage?.output_tokens
-          ? raw.usage.input_tokens + raw.usage.output_tokens
-          : undefined,
       },
     };
   }

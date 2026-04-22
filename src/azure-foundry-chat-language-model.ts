@@ -1,7 +1,8 @@
 import {
-  LanguageModelV2,
-  LanguageModelV2CallOptions,
-  LanguageModelV2StreamPart,
+  LanguageModelV3,
+  LanguageModelV3CallOptions,
+  LanguageModelV3StreamPart,
+  LanguageModelV3Usage,
 } from '@ai-sdk/provider';
 import {
   FetchFunction,
@@ -20,6 +21,17 @@ import {
 } from './azure-foundry-chat-options.js';
 import { resolveAdapter, ChatAdapter } from './adapters/index.js';
 import { VERSION } from './version.js';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function toV3Usage(flat: { inputTokens?: number | undefined; outputTokens?: number | undefined }): LanguageModelV3Usage {
+  return {
+    inputTokens: { total: flat.inputTokens, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+    outputTokens: { total: flat.outputTokens, text: undefined, reasoning: undefined },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Config
@@ -50,8 +62,8 @@ type AzureFoundryChatConfig = {
 // Language model implementation
 // ---------------------------------------------------------------------------
 
-export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
-  readonly specificationVersion = 'v2' as const;
+export class AzureFoundryChatLanguageModel implements LanguageModelV3 {
+  readonly specificationVersion = 'v3' as const;
 
   readonly modelId: AzureFoundryChatModelId;
 
@@ -81,8 +93,8 @@ export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
   // -------------------------------------------------------------------------
 
   async doGenerate(
-    options: LanguageModelV2CallOptions,
-  ): Promise<Awaited<ReturnType<LanguageModelV2['doGenerate']>>> {
+    options: LanguageModelV3CallOptions,
+  ): Promise<Awaited<ReturnType<LanguageModelV3['doGenerate']>>> {
     const adapter = resolveAdapter(
       this.modelId,
       this.settings.adapterType,
@@ -116,7 +128,7 @@ export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
     return {
       content: parsed.content,
       finishReason: parsed.finishReason,
-      usage: parsed.usage,
+      usage: toV3Usage(parsed.usage),
       warnings,
       request: { body },
       response: { headers: responseHeaders },
@@ -128,8 +140,8 @@ export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
   // -------------------------------------------------------------------------
 
   async doStream(
-    options: LanguageModelV2CallOptions,
-  ): Promise<Awaited<ReturnType<LanguageModelV2['doStream']>>> {
+    options: LanguageModelV3CallOptions,
+  ): Promise<Awaited<ReturnType<LanguageModelV3['doStream']>>> {
     const adapter = resolveAdapter(
       this.modelId,
       this.settings.adapterType,
@@ -159,26 +171,35 @@ export class AzureFoundryChatLanguageModel implements LanguageModelV2 {
         fetch: this.config.fetch,
       });
 
-    const streamStartPart: LanguageModelV2StreamPart = {
+    const streamStartPart: LanguageModelV3StreamPart = {
       type: 'stream-start',
       warnings,
     };
 
     const coreStream = stream.pipeThrough(
-      new TransformStream<ParseResult<unknown>, LanguageModelV2StreamPart>({
+      new TransformStream<ParseResult<unknown>, LanguageModelV3StreamPart>({
         start(controller) {
           controller.enqueue(streamStartPart);
         },
 
         transform(chunk, controller) {
           for (const part of adapter.parseChunk(chunk)) {
-            controller.enqueue(part as LanguageModelV2StreamPart);
+            controller.enqueue(part as LanguageModelV3StreamPart);
           }
         },
 
         flush(controller) {
           for (const part of adapter.flush()) {
-            controller.enqueue(part as LanguageModelV2StreamPart);
+            if (part.type === 'finish') {
+              const v3Part: LanguageModelV3StreamPart = {
+                type: 'finish',
+                finishReason: part.finishReason,
+                usage: toV3Usage(part.usage),
+              };
+              controller.enqueue(v3Part);
+            } else {
+              controller.enqueue(part as LanguageModelV3StreamPart);
+            }
           }
         },
       }),

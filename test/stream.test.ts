@@ -70,7 +70,7 @@ describe('doStream — basic text streaming', () => {
     const finish = parts.find(p => p.type === 'finish') as any;
 
     expect(finish).toBeDefined();
-    expect(finish.finishReason).toBe('stop');
+    expect(finish.finishReason).toMatchObject({ unified: 'stop' });
   });
 
   it('maps finish_reason length → length', async () => {
@@ -78,7 +78,7 @@ describe('doStream — basic text streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.finishReason).toBe('length');
+    expect(finish.finishReason).toMatchObject({ unified: 'length' });
   });
 
   it('maps finish_reason content_filter → content-filter', async () => {
@@ -86,7 +86,7 @@ describe('doStream — basic text streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.finishReason).toBe('content-filter');
+    expect(finish.finishReason).toMatchObject({ unified: 'content-filter' });
   });
 
   it('emits usage in the finish part when provided in stream', async () => {
@@ -97,7 +97,10 @@ describe('doStream — basic text streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.usage).toEqual({ inputTokens: 8, outputTokens: 12, totalTokens: undefined });
+    expect(finish.usage).toEqual({
+      inputTokens: { total: 8, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+      outputTokens: { total: 12, text: undefined, reasoning: undefined },
+    });
   });
 
   it('finish usage defaults to undefined when not in stream', async () => {
@@ -105,7 +108,10 @@ describe('doStream — basic text streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.usage).toEqual({ inputTokens: undefined, outputTokens: undefined, totalTokens: undefined });
+    expect(finish.usage).toEqual({
+      inputTokens: { total: undefined, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+      outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+    });
   });
 
   it('full text can be reconstructed from deltas', async () => {
@@ -197,7 +203,7 @@ describe('doStream — tool call streaming', () => {
     const parts = await collectStream(makeModel(fetch));
     const finish = parts.find(p => p.type === 'finish') as any;
 
-    expect(finish.finishReason).toBe('tool-calls');
+    expect(finish.finishReason).toMatchObject({ unified: 'tool-calls' });
   });
 });
 

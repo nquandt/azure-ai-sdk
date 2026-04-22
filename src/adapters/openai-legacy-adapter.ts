@@ -1,6 +1,6 @@
 import {
-  LanguageModelV2CallOptions,
-  LanguageModelV2CallWarning,
+  LanguageModelV3CallOptions,
+  SharedV3Warning,
 } from '@ai-sdk/provider';
 import { convertToOpenAIMessages, OpenAIAdapter, openAIChunkSchema, openAIResponseSchema } from './openai-adapter.js';
 
@@ -17,10 +17,10 @@ export class OpenAILegacyAdapter extends OpenAIAdapter {
   override readonly chunkSchema = openAIChunkSchema;
 
   override buildRequest(
-    options: LanguageModelV2CallOptions,
+    options: LanguageModelV3CallOptions,
     modelId: string,
     modelInBody: boolean,
-  ): { body: Record<string, unknown>; warnings: LanguageModelV2CallWarning[] } {
+  ): { body: Record<string, unknown>; warnings: SharedV3Warning[] } {
     // Delegate to parent to get warnings, tool setup, and message conversion,
     // then swap out the token-limit key and temperature handling.
     const { body, warnings } = super.buildRequest(options, modelId, modelInBody);

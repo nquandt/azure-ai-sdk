@@ -1,4 +1,4 @@
-import { LanguageModelV2, NoSuchModelError, ProviderV2 } from '@ai-sdk/provider';
+import { LanguageModelV3, NoSuchModelError, ProviderV3 } from '@ai-sdk/provider';
 import { FetchFunction, withoutTrailingSlash } from '@ai-sdk/provider-utils';
 import type { TokenCredential } from '@azure/identity';
 import { appendFileSync, mkdirSync } from 'node:fs';
@@ -225,14 +225,14 @@ export interface AzureFoundryProviderSettings {
 // Provider interface
 // ---------------------------------------------------------------------------
 
-export interface AzureFoundryProvider extends ProviderV2 {
+export interface AzureFoundryProvider extends ProviderV3 {
   /**
    * Create a language model instance for the given deployment name.
    */
   (
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
-  ): LanguageModelV2;
+  ): LanguageModelV3;
 
   /**
    * Create a language model instance for the given deployment name.
@@ -240,7 +240,7 @@ export interface AzureFoundryProvider extends ProviderV2 {
   languageModel(
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
-  ): LanguageModelV2;
+  ): LanguageModelV3;
 
   /**
    * Create a chat model instance for the given deployment name.
@@ -248,7 +248,7 @@ export interface AzureFoundryProvider extends ProviderV2 {
   chat(
     modelId: AzureFoundryChatModelId,
     settings?: AzureFoundryChatSettings,
-  ): LanguageModelV2;
+  ): LanguageModelV3;
 }
 
 // ---------------------------------------------------------------------------
@@ -502,7 +502,7 @@ export function createAzureFoundry(
   provider.chat = createChatModel;
 
   provider.textEmbeddingModel = (modelId: string) => {
-    throw new NoSuchModelError({ modelId, modelType: 'textEmbeddingModel' });
+    throw new NoSuchModelError({ modelId, modelType: 'embeddingModel' });
   };
 
   provider.imageModel = (modelId: string) => {

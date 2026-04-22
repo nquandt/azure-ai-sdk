@@ -1,8 +1,7 @@
 import {
-  LanguageModelV2CallOptions,
-  LanguageModelV2CallWarning,
-  LanguageModelV2Content,
-  LanguageModelV2FinishReason,
+  LanguageModelV3CallOptions,
+  LanguageModelV3FinishReason,
+  SharedV3Warning,
 } from '@ai-sdk/provider';
 import { ParseResult } from '@ai-sdk/provider-utils';
 import { z } from 'zod';
@@ -124,14 +123,18 @@ type OpenAIChunk = z.infer<typeof openAIChunkSchema>;
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-export function mapFinishReason(reason: string | null | undefined): LanguageModelV2FinishReason {
-  switch (reason) {
-    case 'stop': return 'stop';
-    case 'length': return 'length';
-    case 'content_filter': return 'content-filter';
-    case 'tool_calls': return 'tool-calls';
-    default: return 'other';
-  }
+export function mapFinishReason(reason: string | null | undefined): LanguageModelV3FinishReason {
+  const raw = reason ?? undefined;
+  const unified = ((): LanguageModelV3FinishReason['unified'] => {
+    switch (reason) {
+      case 'stop': return 'stop';
+      case 'length': return 'length';
+      case 'content_filter': return 'content-filter';
+      case 'tool_calls': return 'tool-calls';
+      default: return 'other';
+    }
+  })();
+  return { unified, raw };
 }
 
 function toolResultToString(output: { type: string; value?: unknown }): string {
@@ -150,7 +153,7 @@ function toolResultToString(output: { type: string; value?: unknown }): string {
 }
 
 export function convertToOpenAIMessages(
-  prompt: LanguageModelV2CallOptions['prompt'],
+  prompt: LanguageModelV3CallOptions['prompt'],
 ): ChatMessage[] {
   const messages: ChatMessage[] = [];
 
@@ -218,6 +221,7 @@ export function convertToOpenAIMessages(
 
       case 'tool': {
         for (const part of message.content) {
+          if (part.type !== 'tool-result') continue;
           messages.push({
             role: 'tool',
             tool_call_id: part.toolCallId,
@@ -233,18 +237,18 @@ export function convertToOpenAIMessages(
   return messages;
 }
 
-function buildToolsAndChoice(options: LanguageModelV2CallOptions): {
+function buildToolsAndChoice(options: LanguageModelV3CallOptions): {
   tools: unknown;
   tool_choice: unknown;
-  warnings: LanguageModelV2CallWarning[];
+  warnings: SharedV3Warning[];
 } {
-  const warnings: LanguageModelV2CallWarning[] = [];
+  const warnings: SharedV3Warning[] = [];
   let tools: unknown;
   let tool_choice: unknown;
 
-  if (options.topK != null) warnings.push({ type: 'unsupported-setting', setting: 'topK' });
-  if (options.presencePenalty != null) warnings.push({ type: 'unsupported-setting', setting: 'presencePenalty' });
-  if (options.frequencyPenalty != null) warnings.push({ type: 'unsupported-setting', setting: 'frequencyPenalty' });
+  if (options.topK != null) warnings.push({ type: 'unsupported', feature: 'topK' });
+  if (options.presencePenalty != null) warnings.push({ type: 'unsupported', feature: 'presencePenalty' });
+  if (options.frequencyPenalty != null) warnings.push({ type: 'unsupported', feature: 'frequencyPenalty' });
 
   if (options.tools && options.tools.length > 0) {
     tools = options.tools
@@ -279,7 +283,7 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
   readonly chunkSchema = openAIChunkSchema;
 
   // Streaming state
-  private finishReason: LanguageModelV2FinishReason = 'other';
+  private finishReason: LanguageModelV3FinishReason = { unified: 'other', raw: undefined };
   private inputTokens: number | undefined;
   private outputTokens: number | undefined;
   private readonly toolCallAccumulators = new Map<
@@ -294,10 +298,10 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
   }
 
   buildRequest(
-    options: LanguageModelV2CallOptions,
+    options: LanguageModelV3CallOptions,
     modelId: string,
     modelInBody: boolean,
-  ): { body: Record<string, unknown>; warnings: LanguageModelV2CallWarning[] } {
+  ): { body: Record<string, unknown>; warnings: SharedV3Warning[] } {
     const { tools, tool_choice, warnings } = buildToolsAndChoice(options);
     const messages = convertToOpenAIMessages(options.prompt);
 
@@ -336,7 +340,7 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
   parseResponse(raw: OpenAIResponse): ParsedResponse {
     const choice = raw.choices[0];
     const message = choice?.message;
-    const content: LanguageModelV2Content[] = [];
+    const content = [];
 
     if (message?.content) content.push({ type: 'text', text: message.content });
 
@@ -352,12 +356,12 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
     }
 
     return {
-      content,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      content: content as any,
       finishReason: mapFinishReason(choice?.finish_reason),
       usage: {
         inputTokens: raw.usage?.prompt_tokens ?? undefined,
         outputTokens: raw.usage?.completion_tokens ?? undefined,
-        totalTokens: raw.usage?.total_tokens ?? undefined,
       },
     };
   }
