@@ -1,6 +1,9 @@
 import { LanguageModelV2, NoSuchModelError, ProviderV2 } from '@ai-sdk/provider';
 import { FetchFunction, withoutTrailingSlash } from '@ai-sdk/provider-utils';
 import type { TokenCredential } from '@azure/identity';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname } from 'node:path';
 import {
   AzureFoundryChatLanguageModel,
 } from './azure-foundry-chat-language-model.js';
@@ -199,6 +202,23 @@ export interface AzureFoundryProviderSettings {
    * createAzureFoundry({ ..., logger: myLogger });
    */
   logger?: Pick<Console, 'error' | 'warn' | 'info'> | null;
+
+  /**
+   * Path to a file where debug log lines are appended.
+   *
+   * When set, key lifecycle events (init, token acquisition, errors) are
+   * written to this file in addition to the normal `logger`. Useful when
+   * the host process (e.g. opencode) does not surface provider console output.
+   *
+   * The `AZURE_AI_SDK_DEBUG` environment variable is an alternative: when
+   * truthy, debug output is written to `<os.tmpdir()>/azure-ai-sdk-debug.log`.
+   * The `debugLogFile` option takes precedence when both are set.
+   *
+   * @example
+   * // In opencode.json options:
+   * { "debugLogFile": "/tmp/azure-ai-sdk-debug.log" }
+   */
+  debugLogFile?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +293,38 @@ export function createAzureFoundry(
   options: AzureFoundryProviderSettings = {},
 ): AzureFoundryProvider {
   // ---------------------------------------------------------------------------
+  // Debug file logger — activated by `debugLogFile` option or the
+  // AZURE_AI_SDK_DEBUG env var.  Writes timestamped lines to a file so that
+  // errors are visible even when the host process (e.g. opencode) suppresses
+  // console output.
+  // ---------------------------------------------------------------------------
+  const debugFilePath: string | undefined =
+    options.debugLogFile ??
+    (typeof process !== 'undefined' && process.env.AZURE_AI_SDK_DEBUG
+      ? (process.env.AZURE_AI_SDK_DEBUG_LOG ?? `${tmpdir()}/azure-ai-sdk-debug.log`)
+      : undefined);
+
+  function debugLog(level: 'INFO' | 'WARN' | 'ERROR', msg: string): void {
+    if (!debugFilePath) return;
+    try {
+      mkdirSync(dirname(debugFilePath), { recursive: true });
+      appendFileSync(debugFilePath, `[${new Date().toISOString()}] [${level}] ${msg}\n`);
+    } catch {
+      // never let debug logging break the provider
+    }
+  }
+
+  debugLog('INFO', `createAzureFoundry called — options: ${JSON.stringify({
+    hasResourceName: !!options.resourceName,
+    hasEndpoint: !!options.endpoint,
+    hasApiKey: !!options.apiKey,
+    hasCredential: !!options.credential,
+    hasScope: !!options.scope,
+    endpointStyle: options.endpointStyle,
+    apiVersion: options.apiVersion,
+  })}`);
+
+  // ---------------------------------------------------------------------------
   // Endpoint resolution (priority order):
   //   1. options.resourceName (+ options.projectId) — explicit code-level names
   //   2. options.endpoint                           — explicit code-level URL
@@ -299,11 +351,13 @@ export function createAzureFoundry(
   const endpoint = withoutTrailingSlash(resolvedEndpoint) ?? '';
 
   if (!endpoint) {
-    throw new Error(
-      '@nquandt/azure-ai-sdk: An Azure AI Foundry endpoint is required. ' +
-        'Provide it via `resourceName`/`projectId`, the `endpoint` option, or the AZURE_AI_FOUNDRY_ENDPOINT environment variable.',
-    );
+    const err = '@nquandt/azure-ai-sdk: An Azure AI Foundry endpoint is required. ' +
+      'Provide it via `resourceName`/`projectId`, the `endpoint` option, or the AZURE_AI_FOUNDRY_ENDPOINT environment variable.';
+    debugLog('ERROR', err);
+    throw new Error(err);
   }
+
+  debugLog('INFO', `endpoint resolved — url=${endpoint}`);
 
   // ---------------------------------------------------------------------------
   // API key resolution:
@@ -327,10 +381,13 @@ export function createAzureFoundry(
   const logger = options.logger === null ? null : (options.logger ?? console);
 
   const getHeaders: () => Promise<Record<string, string>> = apiKey
-    ? async () => ({
-        Authorization: `Bearer ${apiKey}`,
-        ...options.headers,
-      })
+    ? (() => {
+        debugLog('INFO', 'auth=apiKey (Entra bypassed)');
+        return async () => ({
+          Authorization: `Bearer ${apiKey}`,
+          ...options.headers,
+        });
+      })()
     : (() => {
         // Lazily import @azure/identity only when Entra auth is actually needed.
         // This avoids loading native Azure SDK modules in environments (e.g. bun)
@@ -345,6 +402,7 @@ export function createAzureFoundry(
           : 'DefaultAzureCredential';
         return async () => {
           if (!getTokenFn) {
+            debugLog('INFO', `acquiring Entra token — scope=${scope} credentialType=${credentialType}`);
             const { DefaultAzureCredential, getBearerTokenProvider } = await import('@azure/identity');
             const credential: TokenCredential =
               options.credential ?? new DefaultAzureCredential();
@@ -352,6 +410,7 @@ export function createAzureFoundry(
           }
           try {
             const token = await getTokenFn();
+            debugLog('INFO', 'Entra token acquired successfully');
             return {
               Authorization: `Bearer ${token}`,
               // APIM subscription key — sent alongside the Entra token when set
@@ -367,6 +426,7 @@ export function createAzureFoundry(
           } catch (err) {
             const cause = err instanceof Error ? err.message : String(err);
             const msg = `[azure-ai-sdk] Failed to acquire Azure token — endpoint=${endpoint} scope=${scope} credentialType=${credentialType} cause=${cause}`;
+            debugLog('ERROR', msg);
             logger?.error(msg);
             throw new Error(msg, { cause: err instanceof Error ? err : undefined });
           }
@@ -449,6 +509,7 @@ export function createAzureFoundry(
     throw new NoSuchModelError({ modelId, modelType: 'imageModel' });
   };
 
+  debugLog('INFO', `provider created — endpoint=${endpoint} style=${resolvedStyle}`);
   return provider as unknown as AzureFoundryProvider;
 }
 

@@ -3,13 +3,19 @@
   "provider": {
     "azure-foundry": {
       "npm": "@nquandt/azure-ai-sdk",
-      "name": "Azure AI Foundry (naq)",
+      "name": "Azure AI Foundry (nicho)",
       "options": {
-        "endpoint": "https://naq-test-ai-eus2-resource.cognitiveservices.azure.com"
+        "resourceName": "nicho-mghacx72-eastus2",
+        "projectId": "nicho-mghacx72-eastus2",
+        "apiKey": "{env:AZURE_FOUNDRY_API_KEY}",
+        "debugLogFile": "C:/Users/nquandt/azure-ai-sdk-debug.log"
       },
       "models": {
-        "gpt-5-nano": {
-          "name": "GPT-5 Nano"
+        "gpt-5.4-nano": {
+          "name": "GPT-5.4 Nano"
+        },
+        "Kimi-K2.5": {
+          "name": "Kimi K2.5"
         },
         "claude-sonnet-4-6": {
           "name": "Claude Sonnet 4.6"
@@ -17,5 +23,5 @@
       }
     }
   },
-  "model": "azure-foundry/gpt-5-nano"
+  "model": "azure-foundry/gpt-5.4-nano"
 }
