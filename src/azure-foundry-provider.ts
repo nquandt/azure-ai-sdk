@@ -204,15 +204,10 @@ export interface AzureFoundryProviderSettings {
   logger?: Pick<Console, 'error' | 'warn' | 'info'> | null;
 
   /**
-   * Path to a file where debug log lines are appended.
-   *
-   * When set, key lifecycle events (init, token acquisition, errors) are
-   * written to this file in addition to the normal `logger`. Useful when
-   * the host process (e.g. opencode) does not surface provider console output.
-   *
-   * The `AZURE_AI_SDK_DEBUG` environment variable is an alternative: when
-   * truthy, debug output is written to `<os.tmpdir()>/azure-ai-sdk-debug.log`.
-   * The `debugLogFile` option takes precedence when both are set.
+   * Path to write debug log lines to. Defaults to
+   * `<os.tmpdir()>/azure-ai-sdk-debug.log` when not set.
+   * Can also be overridden via the `AZURE_AI_SDK_DEBUG_LOG` environment variable.
+   * The file is overwritten on each provider init (fresh log per run).
    *
    * @example
    * // In opencode.json options:
@@ -293,19 +288,17 @@ export function createAzureFoundry(
   options: AzureFoundryProviderSettings = {},
 ): AzureFoundryProvider {
   // ---------------------------------------------------------------------------
-  // Debug file logger — activated by `debugLogFile` option or the
-  // AZURE_AI_SDK_DEBUG env var.  Writes timestamped lines to a file so that
-  // errors are visible even when the host process (e.g. opencode) suppresses
-  // console output.
+  // Debug file logger — always writes to a log file.  The path can be
+  // overridden via the `debugLogFile` option or the AZURE_AI_SDK_DEBUG_LOG
+  // env var; it defaults to <tmpdir>/azure-ai-sdk-debug.log.
   // ---------------------------------------------------------------------------
-  const debugFilePath: string | undefined =
+  const debugFilePath: string =
     options.debugLogFile ??
-    (typeof process !== 'undefined' && process.env.AZURE_AI_SDK_DEBUG
-      ? (process.env.AZURE_AI_SDK_DEBUG_LOG ?? `${tmpdir()}/azure-ai-sdk-debug.log`)
-      : undefined);
+    (typeof process !== 'undefined' && process.env.AZURE_AI_SDK_DEBUG_LOG
+      ? process.env.AZURE_AI_SDK_DEBUG_LOG
+      : `${tmpdir()}/azure-ai-sdk-debug.log`);
 
   function debugLog(level: 'INFO' | 'WARN' | 'ERROR', msg: string): void {
-    if (!debugFilePath) return;
     try {
       mkdirSync(dirname(debugFilePath), { recursive: true });
       // Overwrite on the first call each process run, append thereafter.
