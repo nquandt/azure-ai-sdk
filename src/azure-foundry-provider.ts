@@ -188,6 +188,23 @@ export interface AzureFoundryProviderSettings {
   fetch?: FetchFunction;
 
   generateId?: () => string;
+
+  /**
+   * Logger for diagnostic output. Defaults to `console`.
+   *
+   * Set to `null` to silence all SDK logging. You can also supply a custom
+   * object with `{ error, warn, info }` methods to route logs to your own
+   * logging infrastructure.
+   *
+   * @example
+   * // Silence logging
+   * createAzureFoundry({ ..., logger: null });
+   *
+   * @example
+   * // Route to a custom logger
+   * createAzureFoundry({ ..., logger: myLogger });
+   */
+  logger?: Pick<Console, 'error' | 'warn' | 'info'> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +331,10 @@ export function createAzureFoundry(
   // When an explicit API key is provided, use it directly as the Bearer token
   // and skip Entra identity entirely. This is useful for local testing without
   // requiring `az login`. For production, prefer credential-based auth.
+
+  // null explicitly disables logging; undefined falls back to console.
+  const logger = options.logger === null ? null : (options.logger ?? console);
+
   const getHeaders: () => Promise<Record<string, string>> = apiKey
     ? async () => ({
         Authorization: `Bearer ${apiKey}`,
@@ -329,19 +350,32 @@ export function createAzureFoundry(
           ? AI_FOUNDRY_SCOPE
           : COGNITIVE_SERVICES_SCOPE;
         const scope = options.scope ?? defaultScope;
+        const credentialType = options.credential ? options.credential.constructor?.name ?? 'custom' : 'DefaultAzureCredential';
         const getToken = getBearerTokenProvider(credential, scope);
-        return async () => ({
-          Authorization: `Bearer ${await getToken()}`,
-          // APIM subscription key — sent alongside the Entra token when set
-          ...(options.subscriptionKey
-            ? {
-                'Ocp-Apim-Subscription-Key': options.subscriptionKey,
-                'api-key': options.subscriptionKey,
-              }
-            : {}),
-          // Explicit headers always win — they are merged last
-          ...options.headers,
-        });
+        return async () => {
+          try {
+            const token = await getToken();
+            return {
+              Authorization: `Bearer ${token}`,
+              // APIM subscription key — sent alongside the Entra token when set
+              ...(options.subscriptionKey
+                ? {
+                    'Ocp-Apim-Subscription-Key': options.subscriptionKey,
+                    'api-key': options.subscriptionKey,
+                  }
+                : {}),
+              // Explicit headers always win — they are merged last
+              ...options.headers,
+            };
+          } catch (err) {
+            logger?.error(
+              '[azure-ai-sdk] Failed to acquire Azure token. ' +
+                `endpoint=${endpoint} scope=${scope} credentialType=${credentialType} ` +
+                `error=${err instanceof Error ? err.message : String(err)}`,
+            );
+            throw err;
+          }
+        };
       })();
 
   // Resolve the endpoint style.
