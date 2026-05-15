@@ -40,7 +40,7 @@ const toolUseContentBlockSchema = z.object({
   type: z.literal('tool_use'),
   id: z.string(),
   name: z.string(),
-  input: z.record(z.unknown()),
+  input: z.record(z.string(), z.unknown()),
 });
 
 const contentBlockSchema = z.union([textContentBlockSchema, toolUseContentBlockSchema]);
