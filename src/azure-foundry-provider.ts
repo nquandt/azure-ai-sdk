@@ -24,6 +24,12 @@ const AI_FOUNDRY_SCOPE = 'https://ai.azure.com/.default';
 
 export interface AzureFoundryProviderSettings {
   /**
+   * Alias for {@link endpoint}.
+   * Some hosts (e.g. opencode) pass the URL as `baseURL` by convention.
+   */
+  baseURL?: string;
+
+  /**
    * Azure resource base URL. Two formats are supported:
    *
    * Azure OpenAI / Cognitive Services (cognitiveservices.azure.com):
@@ -350,6 +356,9 @@ export function createAzureFoundry(
       return `https://${options.resourceName}.services.ai.azure.com/models`;
     }
     if (options.endpoint !== undefined) return options.endpoint;
+    // Accept baseURL as an alias for endpoint (used by opencode and other hosts
+    // that pass baseURL to the factory convention).
+    if (options.baseURL !== undefined) return options.baseURL;
     const envResource = typeof process !== 'undefined' ? process.env.AZURE_FOUNDRY_RESOURCE : undefined;
     if (envResource) {
       return `https://${envResource}.services.ai.azure.com/models`;
