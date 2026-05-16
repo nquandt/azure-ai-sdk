@@ -2,6 +2,8 @@
 
 This SDK can be used as a custom provider in [OpenCode](https://opencode.ai), giving OpenCode access to any model deployed in Azure AI Foundry — authenticated via Azure Entra identity with no API keys.
 
+> **Provider ID:** OpenCode has built-in handling for providers whose ID contains `"azure"`, which overrides your custom config options (e.g. `resourceName`, `apiKey`). Use a provider ID that does **not** contain `"azure"` — like `"ai-foundry"` or `"custom"` — to avoid this interference.
+
 ---
 
 ## Setup
@@ -27,7 +29,7 @@ Add the following to `opencode.json` at the root of your project. Use either a f
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "azure-foundry": {
+    "ai-foundry": {
       "npm": "@nquandt/azure-ai-sdk",
       "name": "Azure AI Foundry",
       "options": {
@@ -39,18 +41,18 @@ Add the following to `opencode.json` at the root of your project. Use either a f
       }
     }
   },
-  "model": "azure-foundry/gpt-4o"
+  "model": "ai-foundry/gpt-4o"
 }
 ```
 
-Constructs: `https://<your-resource>.services.ai.azure.com/api/projects/<your-project>`
+Constructs: `https://<your-resource>.services.ai.azure.com/models`
 
 **Option B — full endpoint URL**
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "azure-foundry": {
+    "ai-foundry": {
       "npm": "@nquandt/azure-ai-sdk",
       "name": "Azure AI Foundry",
       "options": {
@@ -61,7 +63,7 @@ Constructs: `https://<your-resource>.services.ai.azure.com/api/projects/<your-pr
       }
     }
   },
-  "model": "azure-foundry/gpt-4o"
+  "model": "ai-foundry/gpt-4o"
 }
 ```
 
@@ -91,7 +93,7 @@ List as many models as you have deployed. All models in the provider share the s
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "azure-foundry": {
+    "ai-foundry": {
       "npm": "@nquandt/azure-ai-sdk",
       "name": "Azure AI Foundry",
       "options": {
@@ -136,7 +138,7 @@ When the deployment name in your project doesn’t match the underlying model fa
 ```json
 {
   "provider": {
-    "azure-foundry": {
+    "ai-foundry": {
       "npm": "@nquandt/azure-ai-sdk",
       "name": "Azure AI Foundry",
       "options": {
@@ -185,24 +187,24 @@ npm install @nquandt/azure-ai-sdk@0.5.12 --save
 
 Alternatively edit `.cache/opencode/package.json` to set the dependency version and run `npm install` there. Restart OpenCode after updating.
 
-**Duplicate Claude providers:** This SDK is **not** the same npm package as OpenCode’s built-in Anthropic integration (`@ai-sdk/anthropic`). If your **global** config (`~/.config/opencode/opencode.json`) defines a separate provider for Azure Anthropic (for example `azure-anthropic` with `"npm": "@ai-sdk/anthropic"` and `baseURL` ending in `/anthropic/v1`) **and** you list the **same model key** on both that provider and `azure-foundry` (e.g. `claude-sonnet-4-6`), OpenCode may resolve the **short** model name to the **wrong** provider. The Anthropic SDK factory can then throw **ProviderInitError** during init.
+**Duplicate Claude providers:** This SDK is **not** the same npm package as OpenCode’s built-in Anthropic integration (`@ai-sdk/anthropic`). If your **global** config (`~/.config/opencode/opencode.json`) defines a separate provider for Azure Anthropic (for example `ai-anthropic` with `"npm": "@ai-sdk/anthropic"` and `baseURL` ending in `/anthropic/v1`) **and** you list the **same model key** on both that provider and `ai-foundry` (e.g. `claude-sonnet-4-6`), OpenCode may resolve the **short** model name to the **wrong** provider. The Anthropic SDK factory can then throw **ProviderInitError** during init.
 
 **Fix (pick one):**
 
 1. **Disable the extra Anthropic provider** while using this SDK, for example:
 
    ```json
-   "disabled_providers": ["azure-anthropic"]
+   "disabled_providers": ["ai-anthropic"]
    ```
 
-2. **Use different model keys** per provider (e.g. `foundry-claude-sonnet-4-6` only under `azure-foundry`).
+2. **Use different model keys** per provider (e.g. `foundry-claude-sonnet-4-6` only under `ai-foundry`).
 
-3. **Always choose the full model id** in OpenCode: `azure-foundry/claude-sonnet-4-6`, not the bare deployment name.
+3. **Always choose the full model id** in OpenCode: `ai-foundry/claude-sonnet-4-6`, not the bare deployment name.
 
 4. Set **`small_model`** to a distinct, unambiguous id on the same provider so background tasks do not pull in another provider’s Claude entry, for example:
 
    ```json
-   "small_model": "azure-foundry/gpt-5.4-nano"
+   "small_model": "ai-foundry/gpt-5.4-nano"
    ```
 
 ---
