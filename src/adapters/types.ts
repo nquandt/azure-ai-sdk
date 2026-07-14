@@ -23,6 +23,8 @@ export type ParsedResponse = {
   usage: {
     inputTokens: number | undefined;
     outputTokens: number | undefined;
+    cachedInputTokens?: number | undefined;
+    reasoningTokens?: number | undefined;
   };
 };
 
@@ -34,7 +36,7 @@ export type ParsedStreamChunk =
   | { type: 'tool-input-delta'; id: string; delta: string }
   | { type: 'tool-input-end'; id: string }
   | { type: 'tool-call'; toolCallId: string; toolName: string; input: string }
-  | { type: 'finish'; finishReason: LanguageModelV3FinishReason; usage: { inputTokens: number | undefined; outputTokens: number | undefined } }
+  | { type: 'finish'; finishReason: LanguageModelV3FinishReason; usage: { inputTokens: number | undefined; outputTokens: number | undefined; cachedInputTokens?: number | undefined; reasoningTokens?: number | undefined } }
   | { type: 'error'; error: unknown };
 
 // ---------------------------------------------------------------------------

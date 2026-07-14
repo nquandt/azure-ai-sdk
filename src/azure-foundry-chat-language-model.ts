@@ -26,10 +26,10 @@ import { VERSION } from './version.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function toV3Usage(flat: { inputTokens?: number | undefined; outputTokens?: number | undefined }): LanguageModelV3Usage {
+function toV3Usage(flat: { inputTokens?: number | undefined; outputTokens?: number | undefined; cachedInputTokens?: number | undefined; reasoningTokens?: number | undefined }): LanguageModelV3Usage {
   return {
-    inputTokens: { total: flat.inputTokens, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
-    outputTokens: { total: flat.outputTokens, text: undefined, reasoning: undefined },
+    inputTokens: { total: flat.inputTokens, noCache: undefined, cacheRead: flat.cachedInputTokens, cacheWrite: undefined },
+    outputTokens: { total: flat.outputTokens, text: undefined, reasoning: flat.reasoningTokens },
   };
 }
 
