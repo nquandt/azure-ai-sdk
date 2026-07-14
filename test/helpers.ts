@@ -132,6 +132,8 @@ export function chatResponse(text: string, options?: {
   finishReason?: string;
   promptTokens?: number;
   completionTokens?: number;
+  cachedTokens?: number;
+  reasoningTokens?: number;
   toolCalls?: Array<{ id: string; name: string; arguments: string }>;
 }) {
   return {
@@ -155,6 +157,8 @@ export function chatResponse(text: string, options?: {
       prompt_tokens: options?.promptTokens ?? 10,
       completion_tokens: options?.completionTokens ?? 20,
       total_tokens: (options?.promptTokens ?? 10) + (options?.completionTokens ?? 20),
+      ...(options?.cachedTokens != null ? { prompt_tokens_details: { cached_tokens: options.cachedTokens } } : {}),
+      ...(options?.reasoningTokens != null ? { completion_tokens_details: { reasoning_tokens: options.reasoningTokens } } : {}),
     },
   };
 }

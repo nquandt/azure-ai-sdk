@@ -219,6 +219,20 @@ describe('doGenerate — response parsing', () => {
     });
   });
 
+  it('threads cached and reasoning tokens into v3 usage', async () => {
+    const { fetch } = fakeFetch(chatResponse('hi', {
+      promptTokens: 100, completionTokens: 40, cachedTokens: 64, reasoningTokens: 12,
+    }));
+    const result = await makeModel(fetch).doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(result.usage).toEqual({
+      inputTokens: { total: 100, noCache: undefined, cacheRead: 64, cacheWrite: undefined },
+      outputTokens: { total: 40, text: undefined, reasoning: 12 },
+    });
+  });
+
   it('returns tool calls from the response', async () => {
     const { fetch } = fakeFetch(chatResponse('', {
       finishReason: 'tool_calls',

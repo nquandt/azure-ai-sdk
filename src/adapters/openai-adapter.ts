@@ -67,6 +67,8 @@ export const openAIResponseSchema = z.object({
       prompt_tokens: z.number().nullish(),
       completion_tokens: z.number().nullish(),
       total_tokens: z.number().nullish(),
+      prompt_tokens_details: z.object({ cached_tokens: z.number().nullish() }).nullish(),
+      completion_tokens_details: z.object({ reasoning_tokens: z.number().nullish() }).nullish(),
     })
     .nullish(),
 });
@@ -112,6 +114,8 @@ export const openAIChunkSchema = z.object({
       prompt_tokens: z.number().nullish(),
       completion_tokens: z.number().nullish(),
       total_tokens: z.number().nullish(),
+      prompt_tokens_details: z.object({ cached_tokens: z.number().nullish() }).nullish(),
+      completion_tokens_details: z.object({ reasoning_tokens: z.number().nullish() }).nullish(),
     })
     .nullish(),
 });
@@ -286,6 +290,8 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
   private finishReason: LanguageModelV3FinishReason = { unified: 'other', raw: undefined };
   private inputTokens: number | undefined;
   private outputTokens: number | undefined;
+  private cachedInputTokens: number | undefined;
+  private reasoningTokens: number | undefined;
   private readonly toolCallAccumulators = new Map<
     number,
     { id: string; name: string; argumentsText: string }
@@ -362,6 +368,8 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
       usage: {
         inputTokens: raw.usage?.prompt_tokens ?? undefined,
         outputTokens: raw.usage?.completion_tokens ?? undefined,
+        cachedInputTokens: raw.usage?.prompt_tokens_details?.cached_tokens ?? undefined,
+        reasoningTokens: raw.usage?.completion_tokens_details?.reasoning_tokens ?? undefined,
       },
     };
   }
@@ -375,6 +383,8 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
     if (value.usage) {
       this.inputTokens = value.usage.prompt_tokens ?? undefined;
       this.outputTokens = value.usage.completion_tokens ?? undefined;
+      this.cachedInputTokens = value.usage.prompt_tokens_details?.cached_tokens ?? undefined;
+      this.reasoningTokens = value.usage.completion_tokens_details?.reasoning_tokens ?? undefined;
     }
 
     for (const choice of value.choices) {
@@ -437,7 +447,7 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
     parts.push({
       type: 'finish',
       finishReason: this.finishReason,
-      usage: { inputTokens: this.inputTokens, outputTokens: this.outputTokens },
+      usage: { inputTokens: this.inputTokens, outputTokens: this.outputTokens, cachedInputTokens: this.cachedInputTokens, reasoningTokens: this.reasoningTokens },
     });
 
     return parts;
