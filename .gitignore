@@ -8,3 +8,6 @@ opencode.json
 .env
 *.log
 .DS_Store
+
+# Local vitest output
+test_output.txt
