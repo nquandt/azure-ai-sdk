@@ -81,7 +81,7 @@ Both Azure endpoint styles are supported and detected automatically:
 | `https://<resource>.openai.azure.com/openai/v1` | Azure OpenAI v1 (model in body) |
 | `https://<project>.services.ai.azure.com/models` | AI Foundry serverless inference |
 
-You can also provide `resourceName` and `projectId` instead of a full `endpoint` URL — the SDK constructs `https://{resourceName}.services.ai.azure.com/api/projects/{projectId}` automatically.
+You can also provide `resourceName` and `projectId` instead of a full `endpoint` URL — the SDK constructs `https://{resourceName}.services.ai.azure.com/models` automatically. `projectId` is configuration only and does not change the URL.
 
 ---
 
@@ -123,8 +123,8 @@ Different model families use different request/response wire formats. The SDK de
 
 | `adapterType` | Auto-detected patterns | Use for |
 |---|---|---|
-| `openai` | `o1`, `o3`, `gpt-5*`, `gpt-4.5*` | o-series, gpt-5+ (`max_completion_tokens`) |
-| `openai-legacy` | `gpt-4o*`, `gpt-4*`, `gpt-35*`, `gpt-3.5*`, `kimi*` | gpt-4o, gpt-4, Kimi K2.5 (`max_tokens`) |
+| `openai` | `o1`, `o3`, `gpt-5*` | o-series, gpt-5+ (`max_completion_tokens`) |
+| `openai-legacy` | `gpt-4o*`, `gpt-4*` (incl. `gpt-4.5*`), `gpt-35*`, `gpt-3.5*`, `kimi*` | gpt-4o, gpt-4, gpt-4.5, Kimi K2.5 (`max_tokens`) |
 | `anthropic` | `claude*` | Claude — Anthropic Messages API at host `/anthropic/v1/messages` (not under `/models`) |
 
 For `*.services.ai.azure.com`, OpenAI-style models use `…/models/chat/completions`, while Claude calls `…/anthropic/v1/messages` on the same resource hostname (the SDK strips the trailing `/models` segment when routing Claude).

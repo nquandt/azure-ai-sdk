@@ -103,9 +103,11 @@ export interface AzureFoundryProviderSettings {
    *   - Environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET)
    *   - Workload identity (Kubernetes)
    *   - Managed identity (Azure-hosted compute)
+   *   - Visual Studio Code
    *   - Azure CLI (`az login`)
    *   - Azure PowerShell
-   *   - Visual Studio Code
+   *   - Azure Developer CLI (`azd auth login`)
+   *   - Broker (only when `@azure/identity-broker` is installed)
    */
   credential?: TokenCredential;
 
@@ -268,9 +270,11 @@ export interface AzureFoundryProvider extends ProviderV3 {
  * 1. `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `AZURE_TENANT_ID` env vars
  * 2. Workload identity (Kubernetes pods with federated credentials)
  * 3. Managed identity (Azure-hosted compute)
- * 4. Azure CLI (`az login`)
- * 5. Azure PowerShell
- * 6. VS Code account
+ * 4. VS Code account
+ * 5. Azure CLI (`az login`)
+ * 6. Azure PowerShell
+ * 7. Azure Developer CLI
+ * 8. Broker (only when `@azure/identity-broker` is installed)
  *
  * @example
  * ```ts

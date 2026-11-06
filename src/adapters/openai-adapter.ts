@@ -225,8 +225,7 @@ export function convertToOpenAIMessages(
           messages.push({
             role: 'tool',
             tool_call_id: part.toolCallId,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            content: toolResultToString(part.output as any),
+            content: toolResultToString(part.output),
           });
         }
         break;
@@ -356,7 +355,7 @@ export class OpenAIAdapter implements ChatAdapter<OpenAIResponse, OpenAIChunk> {
     }
 
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // `content` is built as a loose array; the cast is needed because `type` widens to string.
       content: content as any,
       finishReason: mapFinishReason(choice?.finish_reason),
       usage: {
