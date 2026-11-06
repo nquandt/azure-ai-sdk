@@ -11,7 +11,7 @@ The provider uses `DefaultAzureCredential` (or any `TokenCredential` you supply)
 | Endpoint type | Default scope |
 |---|---|
 | `*.cognitiveservices.azure.com` | `https://cognitiveservices.azure.com/.default` |
-| `*.services.ai.azure.com/models` | `https://cognitiveservices.azure.com/.default` |
+| `*.services.ai.azure.com/models` | `https://ai.azure.com/.default` |
 | Custom (APIM, etc.) | Set the `scope` option on `createAzureFoundry` |
 
 ---
@@ -109,8 +109,8 @@ Adapter auto-detection patterns:
 
 | `adapterType` | Auto-detected model name patterns |
 |---|---|
-| `openai` | `o1`, `o3`, `gpt-5*`, `gpt-4.5*` |
-| `openai-legacy` | `gpt-4o*`, `gpt-4*`, `gpt-35*`, `gpt-3.5*`, `kimi*` |
+| `openai` | `o1`, `o3`, `gpt-5*` |
+| `openai-legacy` | `gpt-4o*`, `gpt-4*` (incl. `gpt-4.5*`), `gpt-35*`, `gpt-3.5*`, `kimi*` |
 | `anthropic` | `claude*` |
 
 See the main README for the full list of options.

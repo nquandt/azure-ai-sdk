@@ -80,9 +80,11 @@ By default the provider uses `DefaultAzureCredential` from `@azure/identity`, wh
 1. Environment variables — `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`
 2. Workload identity (Kubernetes federated credentials)
 3. Managed identity (Azure-hosted compute)
-4. Azure CLI (`az login`)
-5. Azure PowerShell
-6. VS Code account
+4. VS Code account
+5. Azure CLI (`az login`)
+6. Azure PowerShell
+7. Azure Developer CLI (`azd auth login`)
+8. Broker (only when `@azure/identity-broker` is installed)
 
 For local development, `az login` is all you need.
 
@@ -120,7 +122,8 @@ createAzureFoundry({
   endpoint: 'https://my-resource.cognitiveservices.azure.com',
 
   // Alternatively, supply resource + project to have the URL built for you.
-  // Constructs: https://{resourceName}.services.ai.azure.com/api/projects/{projectId}
+  // Constructs: https://{resourceName}.services.ai.azure.com/models
+  // projectId is configuration only and does not change the URL.
   // Can also be set via AZURE_FOUNDRY_RESOURCE / AZURE_FOUNDRY_PROJECT env vars.
   resourceName: 'my-resource',
   projectId: 'my-project',
