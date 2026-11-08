@@ -30,6 +30,7 @@ test/
   helpers.ts                            Shared mock utilities (fakeCredential, fakeFetch, etc.)
   provider.test.ts                      Unit tests — provider construction, URL routing, auth headers, endpointStyle
   generate.test.ts                      Unit tests — doGenerate request/response/errors
+  error.test.ts                         Unit tests — azureFoundryFailedResponseHandler retry rule and error body parse
   stream.test.ts                        Unit tests — doStream SSE parsing/errors
   adapters.test.ts                      Unit tests — resolveAdapter heuristics, explicit adapterType, adapter request shapes
   chat.test.ts                          Integration tests — skipped unless env vars are set
