@@ -35,6 +35,20 @@ describe('resolveAdapter — model ID heuristics', () => {
     expect(resolveAdapter('gpt-5-nano', undefined, () => 'id')).toBeInstanceOf(OpenAIAdapter);
   });
 
+  it('gpt-4.5-preview resolves to OpenAIAdapter, not OpenAILegacyAdapter', () => {
+    const adapter = resolveAdapter('gpt-4.5-preview', undefined, () => 'id');
+    expect(adapter).toBeInstanceOf(OpenAIAdapter);
+    expect(adapter).not.toBeInstanceOf(OpenAILegacyAdapter);
+  });
+
+  it('GPT-4.5-Preview resolves to OpenAIAdapter (case-insensitive)', () => {
+    expect(resolveAdapter('GPT-4.5-Preview', undefined, () => 'id')).toBeInstanceOf(OpenAIAdapter);
+  });
+
+  it('plain gpt-4 resolves to OpenAILegacyAdapter', () => {
+    expect(resolveAdapter('gpt-4', undefined, () => 'id')).toBeInstanceOf(OpenAILegacyAdapter);
+  });
+
   it('gpt-4o resolves to OpenAILegacyAdapter', () => {
     expect(resolveAdapter('gpt-4o', undefined, () => 'id')).toBeInstanceOf(OpenAILegacyAdapter);
   });
@@ -103,6 +117,16 @@ describe('openai adapter — request shape', () => {
   it('sends max_completion_tokens', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch, 'gpt-5-nano').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      maxOutputTokens: 256,
+    });
+    expect(requests[0].body).toHaveProperty('max_completion_tokens', 256);
+    expect(requests[0].body).not.toHaveProperty('max_tokens');
+  });
+
+  it('gpt-4.5-preview with no adapterType sends max_completion_tokens', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    await makeModel(fetch, 'gpt-4.5-preview').doGenerate({
       prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
       maxOutputTokens: 256,
     });
