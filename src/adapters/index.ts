@@ -17,7 +17,7 @@ export type { AdapterType, ChatAdapter } from './types.js';
 // is undefined.
 //
 // Pattern rationale:
-//   openai       — o-series reasoning models and gpt-5+ family use
+//   openai       — o-series reasoning models, gpt-4.5 and gpt-5+ family use
 //                  max_completion_tokens and reject temperature=0
 //   openai-legacy — gpt-4o, gpt-4, gpt-35-turbo use max_tokens
 //   anthropic    — claude-* models use the Anthropic Messages API format
@@ -51,12 +51,14 @@ function detectAdapterType(modelId: string): AdapterType {
     if (pattern.test(id)) return 'anthropic';
   }
 
-  for (const pattern of OPENAI_LEGACY_PATTERNS) {
-    if (pattern.test(id)) return 'openai-legacy';
-  }
-
+  // OPENAI_PATTERNS is checked first so that gpt-4.5* (matched by /^gpt-4/ in
+  // the legacy list) routes to openai. No legacy pattern overlaps o-series or gpt-5*.
   for (const pattern of OPENAI_PATTERNS) {
     if (pattern.test(id)) return 'openai';
+  }
+
+  for (const pattern of OPENAI_LEGACY_PATTERNS) {
+    if (pattern.test(id)) return 'openai-legacy';
   }
 
   // Unknown model — default to openai (max_completion_tokens) since that is
