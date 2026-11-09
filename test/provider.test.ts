@@ -486,3 +486,89 @@ describe('createAzureFoundry — endpointStyle option', () => {
     expect(requests[0].url).toContain('/openai/deployments/gpt-4o/chat/completions');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Env-var fallbacks. Env values are set only via vi.stubEnv (the top-level
+// beforeEach blanks them and afterEach restores them), so nothing leaks.
+// ---------------------------------------------------------------------------
+
+describe('createAzureFoundry — env fallbacks', () => {
+  it('env AZURE_FOUNDRY_RESOURCE with no endpoint option builds the /models chat URL and sends model in body', async () => {
+    vi.stubEnv('AZURE_FOUNDRY_RESOURCE', 'env-resource');
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({ credential: fakeCredential(), fetch });
+    await foundry('DeepSeek-R1').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toBe('https://env-resource.services.ai.azure.com/models/chat/completions');
+    expect(requests[0].body).toHaveProperty('model', 'DeepSeek-R1');
+  });
+
+  it('env explicit endpoint option beats AZURE_FOUNDRY_RESOURCE', async () => {
+    vi.stubEnv('AZURE_FOUNDRY_RESOURCE', 'env-resource');
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://option.services.ai.azure.com/models',
+      credential: fakeCredential(),
+      fetch,
+    });
+    await foundry('DeepSeek-R1').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toBe('https://option.services.ai.azure.com/models/chat/completions');
+  });
+
+  it('env AZURE_AI_FOUNDRY_ENDPOINT is used when no other endpoint source is set', async () => {
+    vi.stubEnv('AZURE_AI_FOUNDRY_ENDPOINT', 'https://env-endpoint.cognitiveservices.azure.com');
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({ credential: fakeCredential(), fetch });
+    await foundry('gpt-4o').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].url).toContain('https://env-endpoint.cognitiveservices.azure.com/openai/deployments/gpt-4o/');
+  });
+
+  it('env AZURE_FOUNDRY_API_KEY is sent as Bearer when no credential is passed; explicit apiKey beats it', async () => {
+    vi.stubEnv('AZURE_FOUNDRY_API_KEY', 'env-key-value');
+    const envRun = fakeFetch(chatResponse('hi'));
+    const fromEnv = createAzureFoundry({
+      endpoint: 'https://my-resource.services.ai.azure.com/models',
+      fetch: envRun.fetch,
+    });
+    await fromEnv('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+    expect(envRun.requests[0].headers['authorization']).toBe('Bearer env-key-value');
+
+    const explicitRun = fakeFetch(chatResponse('hi'));
+    const explicit = createAzureFoundry({
+      endpoint: 'https://my-resource.services.ai.azure.com/models',
+      apiKey: 'explicit-key-value',
+      fetch: explicitRun.fetch,
+    });
+    await explicit('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+    expect(explicitRun.requests[0].headers['authorization']).toBe('Bearer explicit-key-value');
+  });
+
+  it('env AZURE_FOUNDRY_API_KEY is ignored when a credential is passed and appears in no header', async () => {
+    vi.stubEnv('AZURE_FOUNDRY_API_KEY', 'env-key-secret');
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    const foundry = createAzureFoundry({
+      endpoint: 'https://my-resource.services.ai.azure.com/models',
+      credential: fakeCredential('entra-token'),
+      fetch,
+    });
+    await foundry('gpt-test').doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+
+    expect(requests[0].headers['authorization']).toBe('Bearer entra-token');
+    expect(Object.values(requests[0].headers)).not.toContain('Bearer env-key-secret');
+    expect(Object.values(requests[0].headers).some((v) => v.includes('env-key-secret'))).toBe(false);
+  });
+});
