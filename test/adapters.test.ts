@@ -144,6 +144,38 @@ describe('openai-legacy adapter — request shape', () => {
     expect(requests[0].body).toHaveProperty('temperature', 0);
   });
 
+  it('keeps the JSON-mode instruction when responseFormat is json', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('{}'));
+    await makeModel(fetch, 'gpt-4o', { adapterType: 'openai-legacy' }).doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      responseFormat: { type: 'json' },
+    });
+    const messages = requests[0].body.messages as Array<{ role: string; content: unknown }>;
+    expect(messages).toHaveLength(2);
+    expect(messages[0]).toMatchObject({ role: 'user' });
+    expect(messages[1].role).toBe('user');
+    expect(JSON.stringify(messages[1].content)).toContain('valid JSON object');
+  });
+
+  it('sends only the original messages when responseFormat is not json', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    await makeModel(fetch, 'gpt-4o', { adapterType: 'openai-legacy' }).doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    });
+    const messages = requests[0].body.messages as Array<{ role: string }>;
+    expect(messages).toHaveLength(1);
+    expect(messages[0].role).toBe('user');
+  });
+
+  it('forwards top_p when set', async () => {
+    const { fetch, requests } = fakeFetch(chatResponse('hi'));
+    await makeModel(fetch, 'gpt-4o', { adapterType: 'openai-legacy' }).doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      topP: 0.9,
+    });
+    expect(requests[0].body).toHaveProperty('top_p', 0.9);
+  });
+
   it('auto-selects openai-legacy for gpt-4o without explicit adapterType', async () => {
     const { fetch, requests } = fakeFetch(chatResponse('hi'));
     await makeModel(fetch, 'gpt-4o').doGenerate({

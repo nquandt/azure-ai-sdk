@@ -2,7 +2,7 @@ import {
   LanguageModelV3CallOptions,
   SharedV3Warning,
 } from '@ai-sdk/provider';
-import { convertToOpenAIMessages, OpenAIAdapter, openAIChunkSchema, openAIResponseSchema } from './openai-adapter.js';
+import { OpenAIAdapter, openAIChunkSchema, openAIResponseSchema } from './openai-adapter.js';
 
 // ---------------------------------------------------------------------------
 // OpenAI-legacy adapter  (max_tokens — gpt-4o and older)
@@ -34,8 +34,8 @@ export class OpenAILegacyAdapter extends OpenAIAdapter {
 
     // Legacy models accept temperature=0 explicitly — override the parent's
     // suppression of 0 values and re-apply the raw SDK values.
-    const messages = convertToOpenAIMessages(options.prompt);
-    legacyBody.messages = messages;
+    // Messages come from the parent unchanged, so the JSON-mode instruction it
+    // appends for responseFormat json is preserved.
 
     if (options.temperature !== undefined) legacyBody.temperature = options.temperature;
     if (options.topP !== undefined) legacyBody.top_p = options.topP;
